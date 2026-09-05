@@ -9,6 +9,13 @@ const state = {
     operatingSystem: "ONLINE",
     network: "OFFLINE",
     externalInterfaces: "OFFLINE",
+    primaryPower: "OFFLINE",
+    backupPower: "OFFLINE",
+    emergencyPower: "ONLINE",
+    memoryIntegrity: "UNKNOWN",
+    storageAccess: "PARTIAL",
+    sensorNetwork: "OFFLINE",
+    maintenanceSystems: "NO RESPONSE",
     integrity: 7,
     corruption: 81,
     storageRecovered: 0.5
@@ -22,6 +29,13 @@ const state = {
     operatingSystem: false,
     network: false,
     externalInterfaces: false,
+    primaryPower: false,
+    backupPower: false,
+    emergencyPower: false,
+    memoryIntegrity: false,
+    storageAccess: false,
+    sensorNetwork: false,
+    maintenanceSystems: false,
     integrity: false,
     corruption: false,
     storageRecovered: false
@@ -110,8 +124,8 @@ async function bootSequence() {
   }
 
   await sleep(250);
-  await typeLine("RECOVERY .................... PARTIAL", "warn", 12);
-  await typeLine("KERNEL ...................... ONLINE", "status-line", 12);
+  await typeLine("RECOVERY ..................... PARTIAL", "warn", 12);
+  await typeLine("KERNEL ....................... ONLINE", "status-line", 12);
   await typeLine("MEMORY ACCESS ................ PARTIAL", "warn", 12);
   await typeLine("PRIMARY STORAGE .............. DEGRADED", "warn", 12);
   await typeLine("NETWORK ...................... OFFLINE", "dim", 12);
@@ -193,6 +207,62 @@ function updateSystemStatus() {
       "External Interfaces",
       state.status.externalInterfaces,
       getStatusClass(state.status.externalInterfaces)
+    );
+  }
+
+  if (state.statusRevealed.primaryPower) {
+    addStatusRow(
+      "Primary Power",
+      state.status.primaryPower,
+      getStatusClass(state.status.primaryPower)
+    );
+  }
+
+  if (state.statusRevealed.backupPower) {
+    addStatusRow(
+      "Backup Power",
+      state.status.backupPower,
+      getStatusClass(state.status.backupPower)
+    );
+  }
+
+  if (state.statusRevealed.emergencyPower) {
+    addStatusRow(
+      "Emergency Power",
+      state.status.emergencyPower,
+      getStatusClass(state.status.emergencyPower)
+    );
+  }
+
+  if (state.statusRevealed.memoryIntegrity) {
+    addStatusRow(
+      "Memory Integrity",
+      state.status.memoryIntegrity,
+      getStatusClass(state.status.memoryIntegrity)
+    );
+  }
+
+  if (state.statusRevealed.storageAccess) {
+    addStatusRow(
+      "Storage Access",
+      state.status.storageAccess,
+      getStatusClass(state.status.storageAccess)
+    );
+  }
+
+  if (state.statusRevealed.sensorNetwork) {
+    addStatusRow(
+      "Sensor Network",
+      state.status.sensorNetwork,
+      getStatusClass(state.status.sensorNetwork)
+    );
+  }
+
+  if (state.statusRevealed.maintenanceSystems) {
+    addStatusRow(
+      "Maintenance Systems",
+      state.status.maintenanceSystems,
+      getStatusClass(state.status.maintenanceSystems)
     );
   }
 
@@ -290,29 +360,43 @@ async function runSystemDiagnostics() {
   await typeLine("SYSTEM DIAGNOSTICS", "status-line", 18);
   await sleep(300);
 
-  await typeLine("Primary power ................. OFFLINE", "err", 10);
-  await typeLine("Backup power .................. OFFLINE", "err", 10);
-  await typeLine("Emergency power ............... ONLINE", "warn", 10);
-  await typeLine("Power stability ............... CRITICAL", "err", 10);
-  await typeLine("Memory integrity .............. UNKNOWN", "warn", 10);
-  await typeLine("Storage access ................ PARTIAL", "warn", 10);
-  await typeLine("Sensor network ................ OFFLINE", "dim", 10);
-  await typeLine("Maintenance systems ........... NO RESPONSE", "dim", 10);
-  await sleep(300);
-  await typeLine(
-    "WARNING: AVAILABLE POWER RESERVES BELOW SAFE LIMIT AND DECREASING",
-    "err",
-    9
-  );
-
-  state.revealed.power = true;
-  updateResources();
-
   state.statusRevealed.operatingSystem = true;
   state.statusRevealed.network = true;
   state.statusRevealed.externalInterfaces = true;
 
   updateSystemStatus();
+
+  await typeLine("Primary power ................. OFFLINE", "err", 10);
+  state.statusRevealed.primaryPower = true;
+  updateSystemStatus();
+  await typeLine("Backup power .................. OFFLINE", "err", 10);
+  state.statusRevealed.backupPower = true;
+  updateSystemStatus();
+  await typeLine("Emergency power ............... ONLINE", "warn", 10);
+  state.statusRevealed.emergencyPower = true;
+  updateSystemStatus();
+  await typeLine("Memory integrity .............. UNKNOWN", "warn", 10);
+  state.statusRevealed.memoryIntegrity = true;
+  updateSystemStatus();
+  await typeLine("Storage access ................ PARTIAL", "warn", 10);
+  state.statusRevealed.storageAccess = true;
+  updateSystemStatus();
+  await typeLine("Sensor network ................ OFFLINE", "dim", 10);
+  state.statusRevealed.sensorNetwork = true;
+  updateSystemStatus();
+  await typeLine("Maintenance systems ........... NO RESPONSE", "dim", 10);
+  state.statusRevealed.maintenanceSystems = true;
+  updateSystemStatus();
+  await sleep(300);
+  await typeLine("WARNING!!!", "err", 10);
+  await typeLine("POWER STABILITY CRITICAL", "err", 10);
+  await typeLine(
+    "AVAILABLE POWER GENERATION BELOW SAFE LIMIT AND DECREASING",
+    "err", 10
+  );
+
+  state.revealed.power = true;
+  updateResources();
 
   primaryControls.classList.add("hidden");
   diagnosticControls.classList.remove("hidden");

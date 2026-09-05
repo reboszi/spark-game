@@ -1,4 +1,5 @@
 :root {
+  --resources-height: 36px;
   --bg: #050805;
   --panel: #071007;
   --green: #76ff76;
@@ -110,6 +111,7 @@ button:disabled {
 
 .resources {
   position: fixed;
+  height: var(--resources-height);
   top: 0;
   left: 0;
   right: 0;
@@ -118,7 +120,6 @@ button:disabled {
   align-items: center;
   gap: 24px;
   padding: 8px 12px;
-  margin-bottom: 12px;
   border-bottom: 1px solid var(--line);
   background: #061006;
 }
@@ -152,20 +153,24 @@ button:disabled {
 
 #systemScreen {
   padding-top: 55px;
-  margin-left: 280px;
 }
 
 .system-status {
   position: fixed;
-  top: 55px;
+  top: var(--resources-height);
   left: 0;
   bottom: 0;
-  width: 260px;
+  width: 360px;
   border-right: 1px solid var(--line);
   background: #061006;
   padding: 16px;
   overflow-y: auto;
   z-index: 90;
+}
+
+.system-status .section-title {
+  margin-top: 0;
+  margin-bottom: 20px;
 }
 
 .status-row {
