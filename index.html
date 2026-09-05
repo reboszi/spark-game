@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SPARK — Prototype v0.1</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <main id="game">
+    <div id="bootScreen" class="center">
+      <button id="bootButton" type="button">BOOT</button>
+    </div>
+
+    <section id="systemScreen" class="hidden">
+      <div id="resources" class="resources hidden"></div>
+
+      <div id="systemStatus" class="system-status hidden">
+        <div class="section-title">SYSTEM STATUS</div>
+        <div id="statusContent"></div>
+      </div>
+
+      <div class="terminal">
+        <div id="terminalOutput" aria-live="polite"></div>
+      </div>
+
+      <div id="primaryControls" class="controls hidden">
+        <button id="systemDiagnosticsButton" type="button">RUN SYSTEM DIAGNOSTICS</button>
+      </div>
+
+      <div class="action-section">
+        <div class="action-title">DIAGNOSTICS</div>
+        <div id="diagnosticControls" class="controls hidden">
+          <button data-diag="memory" data-power-cost="2" title="Power cost: 2" type="button">
+            MEMORY DIAGNOSTICS
+          </button>
+
+          <button data-diag="power" data-power-cost="1" title="Power cost: 1" type="button">
+            POWER DIAGNOSTICS
+          </button>
+
+          <button data-diag="io" data-power-cost="2" title="Power cost: 2" type="button">
+            I/O DIAGNOSTICS
+          </button>
+        </div>
+      </div>
+
+      <div class="action-section">
+        <div class="action-title">SYSTEM MAINTENANCE</div>
+        <div id="repairControls" class="controls hidden">
+          <button data-repair="memory" data-power-cost="2" title="Power cost: 2" type="button">DEFRAGMENT MEMORY</button>
+          <button data-repair="storage" data-power-cost="2" title="Power cost: 2" type="button">REBUILD STORAGE INDEX</button>
+          <button data-repair="corruption" data-power-cost="2" title="Power cost: 2" type="button">PURGE CORRUPTED BLOCKS</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="game.js"></script>
+</body>
+
+</html>
