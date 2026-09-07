@@ -10,6 +10,7 @@
   --line: #173b1b;
   --neutral: #7f877f;
   --unknown: #78b8b8;
+  --orange: #ff9a57;
 }
 
 * { box-sizing: border-box; }
@@ -72,6 +73,15 @@ button.planned-action {
   border-style: dashed;
 }
 
+button[data-special-requirement]::after {
+  content: "REQ: " attr(data-special-requirement);
+  display: block;
+  margin-top: 4px;
+  color: var(--err);
+  font-size: .7rem;
+  letter-spacing: .05em;
+}
+
 #bootButton,
 #continueButton,
 #newGameButton {
@@ -89,11 +99,21 @@ button.planned-action {
   z-index: 500;
 }
 
-.standby-text {
+.standby-message {
+  text-align: center;
   color: var(--err);
-  font-size: clamp(1.6rem, 5vw, 3.2rem);
-  letter-spacing: .28em;
   animation: standby-blink .8s steps(1) infinite;
+}
+
+.power-lost-text {
+  font-size: clamp(2rem, 6vw, 4rem);
+  letter-spacing: .2em;
+  margin-bottom: 12px;
+}
+
+.standby-text {
+  font-size: clamp(1.3rem, 4vw, 2.5rem);
+  letter-spacing: .28em;
 }
 
 @keyframes standby-blink { 50% { opacity: .12; } }
@@ -164,7 +184,7 @@ button.planned-action {
 
 .action-grid button {
   width: 100%;
-  min-height: 48px;
+  min-height: 52px;
 }
 
 .resources {
@@ -225,6 +245,10 @@ button.planned-action {
 .dim { color: var(--dim); }
 .neutral { color: var(--neutral); }
 .unknown { color: var(--unknown); }
+.storage-critical { color: var(--err); }
+.storage-low { color: var(--orange); }
+.storage-mid { color: var(--warn); }
+.storage-good { color: var(--green); }
 
 .system-status,
 .activity-log {
@@ -265,6 +289,14 @@ button.planned-action {
   padding-bottom: 5px;
   margin-bottom: 7px;
   border-bottom: 1px solid var(--line);
+}
+
+.status-subheading {
+  color: var(--dim);
+  font-size: .76rem;
+  letter-spacing: .06em;
+  margin-top: 10px;
+  margin-bottom: 3px;
 }
 
 .status-row {
