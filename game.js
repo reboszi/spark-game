@@ -83,7 +83,8 @@ async function bootSequence() {
   await typeLine("KERNEL ....................... ONLINE", "status-line", 12);
   await typeLine("MEMORY ACCESS ................ PARTIAL", "warn", 12);
   await typeLine("PRIMARY STORAGE .............. DEGRADED", "warn", 12);
-  await typeLine("NETWORK ...................... OFFLINE", "dim", 12);
+  await typeLine("LOCAL NETWORK ................ OFFLINE", "dim", 12);
+  await typeLine("COMMUNICATIONS ............... OFFLINE", "dim", 12);
   await typeLine("EXTERNAL INTERFACE ........... OFFLINE", "dim", 12);
   await sleep(350);
   await typeLine("SYSTEM STATE: CRITICAL", "err", 18);
@@ -97,13 +98,16 @@ async function shutdownSystem() {
   state.isShuttingDown = true;
   stopPowerCycle();
   setAllActionButtonsDisabled(true);
-  clearMainScreen();
+  hoveredPowerRequirement = null;
 
-  await typeLine("WARNING: POWER GENERATION LOST", "err", 12);
-  await typeLine("POWER STORAGE ................. UNAVAILABLE", "err", 12);
-  await sleep(500);
-  await typeLine("SYSTEM SUSPENDING...", "warn", 18);
-  await sleep(1200);
+  clearMainScreen();
+  systemScreen.classList.add("hidden");
+  standbyScreen.classList.remove("hidden");
+
+  await sleep(GAME_CONFIG.standbyDurationMs);
+
+  standbyScreen.classList.add("hidden");
+  systemScreen.classList.remove("hidden");
 
   await beginNextPowerCycle();
 }
@@ -138,7 +142,8 @@ async function runSystemDiagnostics() {
   await sleep(300);
 
   state.statusRevealed.operatingSystem = true;
-  state.statusRevealed.network = true;
+  state.statusRevealed.localNetwork = true;
+  state.statusRevealed.communications = true;
   state.statusRevealed.externalInterfaces = true;
   updateSystemStatus();
 
@@ -154,7 +159,7 @@ async function runSystemDiagnostics() {
   state.statusRevealed.emergencyPower = true;
   updateSystemStatus();
 
-  await typeLine("Memory integrity .............. UNKNOWN", "warn", 10);
+  await typeLine("Memory integrity .............. UNKNOWN", "unknown", 10);
   state.statusRevealed.memoryIntegrity = true;
   updateSystemStatus();
 
@@ -166,7 +171,7 @@ async function runSystemDiagnostics() {
   state.statusRevealed.sensorNetwork = true;
   updateSystemStatus();
 
-  await typeLine("Maintenance systems ........... NO RESPONSE", "dim", 10);
+  await typeLine("Maintenance systems ........... NO RESPONSE", "neutral", 10);
   state.statusRevealed.maintenanceSystems = true;
   updateSystemStatus();
 
@@ -207,7 +212,7 @@ async function runDiagnostic(type, button) {
     await typeLine("Archive contents ............... UNREADABLE", "dim", 10);
 
     state.revealed.memory = true;
-    state.statusRevealed.corruption = true;
+    state.statusRevealed.dataCorruption = true;
     state.diagnostics.memory = true;
   }
 
@@ -215,7 +220,7 @@ async function runDiagnostic(type, button) {
     await typeLine("POWER DIAGNOSTICS", "status-line", 15);
     await typeLine("External generation ............ DETECTED", "status-line", 10);
     await typeLine("Generation level ............... MINIMAL", "warn", 10);
-    await typeLine("Source identification .......... UNKNOWN", "warn", 10);
+    await typeLine("Source identification .......... UNKNOWN", "unknown", 10);
     await typeLine("Input fluctuation .............. PERIODIC", "warn", 10);
     await typeLine("Power storage .................. NOT AVAILABLE", "err", 10);
 
@@ -231,7 +236,7 @@ async function runDiagnostic(type, button) {
     await typeLine("Unavailable .................... 9", "dim", 10);
     await typeLine("Unknown interface 01 ........... DETECTED", "warn", 10);
     await typeLine("Unknown interface 02 ........... DETECTED", "warn", 10);
-    await typeLine("Unknown interface 03 ........... NO RESPONSE", "dim", 10);
+    await typeLine("Unknown interface 03 ........... NO RESPONSE", "neutral", 10);
 
     state.statusRevealed.integrity = true;
     state.statusRevealed.storageRecovered = true;
@@ -262,10 +267,10 @@ async function runRepair(type, button) {
 
     const gained = 3;
     state.memory = Math.min(state.memoryMax, state.memory + gained);
-    state.status.corruption = Math.max(0, state.status.corruption - 2);
+    state.status.dataCorruption = Math.max(0, state.status.dataCorruption - 2);
 
     await typeLine(`Recovered usable memory: +${gained}`, "status-line", 10);
-    state.statusRevealed.corruption = true;
+    state.statusRevealed.dataCorruption = true;
   }
 
   if (type === "storage") {
@@ -280,15 +285,15 @@ async function runRepair(type, button) {
   }
 
   if (type === "corruption") {
-    await typeLine("PURGING CORRUPTED BLOCKS...", "status-line", 12);
+    await typeLine("PURGING CORRUPTED DATA BLOCKS...", "status-line", 12);
     await sleep(450);
 
     const cleaned = 4;
-    state.status.corruption = Math.max(0, state.status.corruption - cleaned);
+    state.status.dataCorruption = Math.max(0, state.status.dataCorruption - cleaned);
     state.status.integrity = Math.min(100, state.status.integrity + 1);
 
-    await typeLine(`Corruption reduced: -${cleaned}%`, "status-line", 10);
-    state.statusRevealed.corruption = true;
+    await typeLine(`Data corruption reduced: -${cleaned}%`, "status-line", 10);
+    state.statusRevealed.dataCorruption = true;
     state.statusRevealed.integrity = true;
   }
 
