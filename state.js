@@ -19,6 +19,13 @@ const state = {
   isBusy: false,
   isShuttingDown: false,
 
+  progression: {
+    hasBooted: false,
+    systemDiagnosticsComplete: false
+  },
+
+  logEntries: [],
+
   status: {
     operatingSystem: "ONLINE",
     localNetwork: "OFFLINE",
