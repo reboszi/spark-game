@@ -26,18 +26,27 @@ const state = {
 
   logEntries: [],
 
+  capabilities: {
+    repairDrone: false
+  },
+
   status: {
     operatingSystem: "ONLINE",
     systemIntegrity: 0,
 
     primaryPower: "ERROR",
+    primaryPowerCondition: "DAMAGED",
+    primaryPowerDiagnostics: "UNAVAILABLE",
+
     backupPower: "RESTART REQUIRED",
+    backupGenerator: "HYDRAZINE THERMAL CELL",
+    backupFault: "HYDRAZINE VALVE BLOCKED",
+    backupRestartMethod: "EMERGENCY POWER FEEDBACK LOOP",
+
     emergencyPower: "ONLINE",
 
-    memoryIntegrity: "SEVERE",
-    storageAccess: "PARTIAL",
-    storageRecovered: 0.5,
-    corruptedArchivesFound: 0,
+    memoryIntegrity: 5,
+    storageRecovered: 2,
     archive01: "CORRUPTED",
 
     sensors: "DETECTED",
@@ -61,10 +70,7 @@ const state = {
     backupPower: false,
     emergencyPower: false,
 
-    memoryIntegrity: false,
-    storageAccess: false,
     storageRecovered: false,
-    corruptedArchivesFound: false,
     archive01: false,
 
     sensors: false,
