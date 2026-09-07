@@ -1,4 +1,5 @@
 const bootScreen = document.getElementById("bootScreen");
+const standbyScreen = document.getElementById("standbyScreen");
 const systemScreen = document.getElementById("systemScreen");
 const bootButton = document.getElementById("bootButton");
 const terminal = document.getElementById("terminalOutput");
@@ -11,6 +12,8 @@ const resourcesEl = document.getElementById("resources");
 const systemStatusEl = document.getElementById("systemStatus");
 const statusContentEl = document.getElementById("statusContent");
 const systemDiagnosticsButton = document.getElementById("systemDiagnosticsButton");
+
+let hoveredPowerRequirement = null;
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -86,6 +89,14 @@ function updateResources() {
     );
   }
 
+  if (hoveredPowerRequirement !== null && state.revealed.powerGeneration) {
+    const sufficient = getAvailablePower() >= hoveredPowerRequirement;
+    html += `
+      <div class="requirement-preview ${sufficient ? "sufficient" : "insufficient"}">
+        ⚡ REQUIRED ${hoveredPowerRequirement}
+      </div>`;
+  }
+
   resourcesEl.innerHTML = html;
   resourcesEl.classList.toggle("hidden", !html);
   updateButtons();
@@ -93,8 +104,10 @@ function updateResources() {
 
 function getStatusClass(value) {
   if (["ERROR", "CRITICAL", "SEVERE"].includes(value)) return "err";
-  if (["PARTIAL", "UNKNOWN", "DEGRADED", "DETECTED"].includes(value)) return "warn";
-  if (["OFFLINE", "NO RESPONSE", "UNAVAILABLE"].includes(value)) return "dim";
+  if (["PARTIAL", "DEGRADED", "DETECTED"].includes(value)) return "warn";
+  if (["OFFLINE", "UNAVAILABLE"].includes(value)) return "dim";
+  if (value === "NO RESPONSE") return "neutral";
+  if (value === "UNKNOWN") return "unknown";
   if (["ONLINE", "ACTIVE", "PRESENT"].includes(value)) return "status-line";
   return "";
 }
@@ -113,7 +126,8 @@ function updateSystemStatus() {
 
   const statusRows = [
     ["operatingSystem", "Operating System"],
-    ["network", "Network"],
+    ["localNetwork", "Local Network"],
+    ["communications", "Communications"],
     ["externalInterfaces", "External Interfaces"],
     ["primaryPower", "Primary Power"],
     ["backupPower", "Backup Power"],
@@ -134,8 +148,8 @@ function updateSystemStatus() {
     addStatusRow("Integrity", `${state.status.integrity}%`, "warn");
   }
 
-  if (state.statusRevealed.corruption) {
-    addStatusRow("Corruption", `${state.status.corruption}%`, "err");
+  if (state.statusRevealed.dataCorruption) {
+    addStatusRow("Data Corruption", `${state.status.dataCorruption}%`, "err");
   }
 
   if (state.statusRevealed.storageRecovered) {
@@ -154,7 +168,10 @@ function updateButtons() {
   document.querySelectorAll("[data-power-requirement]").forEach(button => {
     const requirement = Number(button.dataset.powerRequirement);
     const insufficientPower = state.revealed.powerGeneration && getAvailablePower() < requirement;
-    button.disabled = state.isBusy || state.isShuttingDown || insufficientPower;
+
+    button.classList.toggle("power-insufficient", insufficientPower);
+    button.setAttribute("aria-disabled", String(state.isBusy || state.isShuttingDown || insufficientPower));
+    button.disabled = state.isBusy || state.isShuttingDown;
   });
 }
 
@@ -173,7 +190,7 @@ function refreshActionUnlocks() {
   const corruptionRepair = repairControls.querySelector('[data-repair="corruption"]');
 
   memoryRepair.classList.toggle("hidden", !state.diagnostics.memory || state.memory >= state.memoryMax);
-  corruptionRepair.classList.toggle("hidden", !state.diagnostics.memory || state.status.corruption <= 0);
+  corruptionRepair.classList.toggle("hidden", !state.diagnostics.memory || state.status.dataCorruption <= 0);
   storageRepair.classList.toggle("hidden", !state.diagnostics.io || state.status.storageRecovered >= 100);
 
   const anyVisible = [...repairControls.querySelectorAll("button")]
@@ -181,3 +198,20 @@ function refreshActionUnlocks() {
 
   maintenanceSection.classList.toggle("hidden", !anyVisible);
 }
+
+function showPowerRequirement(button) {
+  hoveredPowerRequirement = Number(button.dataset.powerRequirement);
+  updateResources();
+}
+
+function hidePowerRequirement() {
+  hoveredPowerRequirement = null;
+  updateResources();
+}
+
+document.querySelectorAll("[data-power-requirement]").forEach(button => {
+  button.addEventListener("mouseenter", () => showPowerRequirement(button));
+  button.addEventListener("mouseleave", hidePowerRequirement);
+  button.addEventListener("focus", () => showPowerRequirement(button));
+  button.addEventListener("blur", hidePowerRequirement);
+});
