@@ -117,13 +117,20 @@ function updateResources() {
 }
 
 function getStatusClass(value) {
-  if (["ERROR", "CRITICAL", "SEVERE", "CORRUPTED"].includes(value)) return "err";
+  if (["ERROR", "CRITICAL", "SEVERE", "CORRUPTED", "DAMAGED", "BLOCKED"].includes(value)) return "err";
   if (["PARTIAL", "DEGRADED", "DETECTED", "RESTART REQUIRED"].includes(value)) return "warn";
   if (["OFFLINE", "UNAVAILABLE"].includes(value)) return "dim";
   if (value === "NO RESPONSE") return "neutral";
   if (value === "UNKNOWN") return "unknown";
-  if (["ONLINE", "ACTIVE", "PRESENT", "RECOVERED"].includes(value)) return "status-line";
+  if (["ONLINE", "ACTIVE", "PRESENT", "RECOVERED", "AVAILABLE"].includes(value)) return "status-line";
   return "";
+}
+
+function getStorageRecoveryClass(value) {
+  if (value >= 75) return "storage-good";
+  if (value >= 50) return "storage-mid";
+  if (value >= 25) return "storage-low";
+  return "storage-critical";
 }
 
 function calculateSystemIntegrity() {
@@ -134,7 +141,7 @@ function calculateSystemIntegrity() {
   if (!state.actions.primaryPowerRepaired) integrity -= 20;
   if (!state.actions.backupRestarted) integrity -= 10;
 
-  const memoryFraction = Math.min(1, state.memory / state.memoryMax);
+  const memoryFraction = Math.min(1, state.status.memoryIntegrity / 100);
   integrity -= Math.round((1 - memoryFraction) * 15);
 
   const storageFraction = Math.min(1, state.status.storageRecovered / 100);
@@ -142,10 +149,10 @@ function calculateSystemIntegrity() {
 
   if (!state.actions.archive01Repaired) integrity -= 5;
 
-  integrity -= 5; // Sensors unresolved
-  integrity -= 5; // Manipulators unresolved
-  integrity -= 5; // Communications unresolved
-  integrity -= 5; // Unknown interface unresolved
+  integrity -= 5;
+  integrity -= 5;
+  integrity -= 5;
+  integrity -= 5;
 
   return Math.max(0, integrity);
 }
@@ -160,6 +167,10 @@ function updateSystemStatus() {
         <span class="status-dots"></span>
         <span class="${cls}">${value}</span>
       </div>`;
+  }
+
+  function subheading(label) {
+    return `<div class="status-subheading">${label}:</div>`;
   }
 
   function addGroup(title, rows) {
@@ -186,7 +197,7 @@ function updateSystemStatus() {
 
   addGroup("POWER", [
     state.statusRevealed.primaryPower
-      ? row("Primary Power", state.status.primaryPower, getStatusClass(state.status.primaryPower))
+      ? row("Primary Power", state.status.primaryPowerCondition, getStatusClass(state.status.primaryPowerCondition))
       : "",
     state.statusRevealed.backupPower
       ? row("Backup Power", state.status.backupPower, getStatusClass(state.status.backupPower))
@@ -197,18 +208,10 @@ function updateSystemStatus() {
   ]);
 
   addGroup("MEMORY & STORAGE", [
-    state.statusRevealed.memoryIntegrity
-      ? row("Memory Integrity", state.status.memoryIntegrity, getStatusClass(state.status.memoryIntegrity))
-      : "",
-    state.statusRevealed.storageAccess
-      ? row("Storage Access", state.status.storageAccess, getStatusClass(state.status.storageAccess))
-      : "",
     state.statusRevealed.storageRecovered
-      ? row("Storage Recovery", `${state.status.storageRecovered}%`, "warn")
+      ? row("Storage Recovery", `${state.status.storageRecovered}%`, getStorageRecoveryClass(state.status.storageRecovered))
       : "",
-    state.statusRevealed.corruptedArchivesFound
-      ? row("Corrupted Archives", state.status.corruptedArchivesFound, state.status.corruptedArchivesFound ? "err" : "status-line")
-      : "",
+    state.statusRevealed.archive01 ? subheading("Corrupted Archives") : "",
     state.statusRevealed.archive01
       ? row("Data Archive 01", state.status.archive01, getStatusClass(state.status.archive01))
       : ""
@@ -258,12 +261,24 @@ function getAvailablePower() {
   return state.powerGeneration;
 }
 
+function hasSpecialRequirement(button) {
+  const requirement = button.dataset.specialRequirement;
+  if (!requirement) return true;
+
+  if (requirement === "REPAIR DRONE") {
+    return Boolean(state.capabilities.repairDrone);
+  }
+
+  return false;
+}
+
 function buttonRequirementsMet(button) {
   const powerRequirement = Number(button.dataset.powerRequirement || 0);
   const processingRequirement = Number(button.dataset.processingRequirement || 0);
 
   return state.powerGeneration >= powerRequirement &&
-    state.processingPower >= processingRequirement;
+    state.processingPower >= processingRequirement &&
+    hasSpecialRequirement(button);
 }
 
 function updateButtons() {
