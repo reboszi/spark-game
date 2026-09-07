@@ -3,6 +3,7 @@
   --bg: #050805;
   --panel: #071007;
   --green: #76ff76;
+  --green-bright: #b6ffb6;
   --dim: #2f7f35;
   --warn: #d8ff76;
   --err: #ff6b6b;
@@ -36,6 +37,13 @@ body {
   justify-content: center;
 }
 
+.start-menu {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 button {
   font: inherit;
   color: var(--green);
@@ -63,10 +71,12 @@ button.power-insufficient {
   cursor: not-allowed;
 }
 
-#bootButton {
-  font-size: 1.15rem;
-  letter-spacing: .18em;
-  padding: 14px 28px;
+#bootButton,
+#continueButton,
+#newGameButton {
+  font-size: 1.05rem;
+  letter-spacing: .12em;
+  padding: 14px 24px;
 }
 
 .hidden {
@@ -160,6 +170,7 @@ button.power-insufficient {
   display: flex;
   align-items: center;
   gap: 7px;
+  transition: color .12s ease, text-shadow .12s ease;
 }
 
 .resource-name {
@@ -172,20 +183,26 @@ button.power-insufficient {
   font-size: .95rem;
 }
 
-.requirement-preview {
-  margin-left: 10px;
-  padding-left: 16px;
-  border-left: 1px solid var(--line);
-  font-size: .82rem;
-  letter-spacing: .06em;
+.power-resource.requirement-active {
+  color: var(--green-bright);
+  text-shadow: 0 0 8px rgba(118, 255, 118, .28);
 }
 
-.requirement-preview.sufficient {
+.power-resource.requirement-active .resource-name {
   color: var(--green);
 }
 
-.requirement-preview.insufficient {
+.power-resource.requirement-insufficient {
   color: var(--err);
+  text-shadow: 0 0 8px rgba(255, 107, 107, .22);
+}
+
+.power-requirement {
+  margin-left: 5px;
+  padding-left: 8px;
+  border-left: 1px solid currentColor;
+  font-size: .82rem;
+  letter-spacing: .05em;
 }
 
 .section-title {
@@ -218,20 +235,31 @@ button.power-insufficient {
   color: var(--unknown);
 }
 
-.system-status {
+.system-status,
+.activity-log {
   position: fixed;
   top: var(--resources-height);
-  left: 0;
   bottom: 0;
-  width: 340px;
-  border-right: 1px solid var(--line);
   background: #061006;
   padding: 16px;
   overflow-y: auto;
   z-index: 90;
 }
 
-.system-status .section-title {
+.system-status {
+  left: 0;
+  width: 340px;
+  border-right: 1px solid var(--line);
+}
+
+.activity-log {
+  right: 0;
+  width: 320px;
+  border-left: 1px solid var(--line);
+}
+
+.system-status .section-title,
+.activity-log .section-title {
   margin-bottom: 20px;
 }
 
@@ -254,17 +282,38 @@ button.power-insufficient {
   transform: translateY(-3px);
 }
 
-@media (max-width: 1100px) {
+.log-entry {
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--line);
+  color: var(--neutral);
+  line-height: 1.35;
+  font-size: .82rem;
+}
+
+.log-entry:last-child {
+  color: var(--green);
+}
+
+.log-index {
+  color: var(--dim);
+  margin-right: 7px;
+}
+
+@media (max-width: 1250px) {
   .system-status {
-    width: 280px;
+    width: 260px;
+  }
+
+  .activity-log {
+    width: 260px;
   }
 
   .main-area {
-    width: min(680px, calc(100% - 32px));
+    width: min(660px, calc(100% - 32px));
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 980px) {
   body {
     padding: 12px;
   }
@@ -279,13 +328,13 @@ button.power-insufficient {
     justify-content: flex-start;
   }
 
-  .system-status {
+  .system-status,
+  .activity-log {
     position: static;
     width: 100%;
     max-height: 220px;
     margin-bottom: 12px;
-    border-right: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
+    border: 1px solid var(--line);
   }
 
   .resources {
@@ -307,14 +356,8 @@ button.power-insufficient {
     font-size: .7rem;
   }
 
-  .resource-value {
+  .resource-value,
+  .power-requirement {
     font-size: .82rem;
-  }
-
-  .requirement-preview {
-    width: 100%;
-    margin-left: 0;
-    padding-left: 0;
-    border-left: 0;
   }
 }
