@@ -19,7 +19,10 @@
     </div>
 
     <div id="standbyScreen" class="standby-screen hidden" aria-live="polite">
-      <div class="standby-text">STANDBY</div>
+      <div class="standby-message">
+        <div class="power-lost-text">POWER LOST</div>
+        <div class="standby-text">STANDBY</div>
+      </div>
     </div>
 
     <section id="systemScreen" class="hidden">
@@ -58,15 +61,15 @@
           <div id="repairControls" class="controls action-grid">
             <button class="hidden" data-repair="memory" data-power-requirement="3" type="button">DEFRAGMENT MEMORY</button>
             <button class="hidden" data-repair="storage" data-power-requirement="2" type="button">RECOVER STORAGE BLOCKS</button>
-            <button class="hidden" data-repair="archive01" data-power-requirement="2" type="button">REPAIR DATA ARCHIVE 01</button>
+            <button class="hidden" data-repair="archive01" data-power-requirement="2" data-processing-requirement="1" type="button">REPAIR DATA ARCHIVE 01</button>
           </div>
         </details>
 
         <details id="plannedSection" class="action-panel hidden" open>
           <summary>PLANNED OPERATIONS</summary>
           <div id="plannedControls" class="controls action-grid">
-            <button class="planned-action hidden" data-planned="backup" data-power-requirement="4" data-processing-requirement="2" type="button">RESTART BACKUP POWER</button>
-            <button class="planned-action hidden" data-planned="primary" data-power-requirement="6" data-processing-requirement="3" type="button">REPAIR PRIMARY POWER</button>
+            <button class="planned-action hidden" data-planned="backup" data-power-requirement="3" data-processing-requirement="2" type="button">ESTABLISH EMERGENCY POWER FEEDBACK LOOP</button>
+            <button class="planned-action hidden" data-planned="primary" data-power-requirement="1" data-special-requirement="REPAIR DRONE" type="button">PRIMARY POWER DIAGNOSTICS</button>
             <button class="planned-action hidden" data-planned="sensors" data-power-requirement="3" data-processing-requirement="2" type="button">SENSOR DIAGNOSTICS</button>
             <button class="planned-action hidden" data-planned="manipulators" data-power-requirement="4" data-processing-requirement="2" type="button">MANIPULATOR DIAGNOSTICS</button>
             <button class="planned-action hidden" data-planned="communications" data-power-requirement="3" data-processing-requirement="2" type="button">COMMUNICATIONS DIAGNOSTICS</button>
