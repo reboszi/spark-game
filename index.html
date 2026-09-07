@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SPARK — Prototype v0.1</title>
+  <title>SPARK — Prototype</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -30,33 +30,42 @@
         <button id="systemDiagnosticsButton" type="button">RUN SYSTEM DIAGNOSTICS</button>
       </div>
 
-      <div class="action-section">
+      <div id="diagnosticSection" class="action-section hidden">
         <div class="action-title">DIAGNOSTICS</div>
-        <div id="diagnosticControls" class="controls hidden">
-          <button data-diag="memory" data-power-cost="2" title="Power cost: 2" type="button">
+        <div id="diagnosticControls" class="controls">
+          <button data-diag="memory" data-power-requirement="2" title="Requires Power Generation: 2" type="button">
             MEMORY DIAGNOSTICS
           </button>
 
-          <button data-diag="power" data-power-cost="1" title="Power cost: 1" type="button">
+          <button data-diag="power" data-power-requirement="1" title="Requires Power Generation: 1" type="button">
             POWER DIAGNOSTICS
           </button>
 
-          <button data-diag="io" data-power-cost="2" title="Power cost: 2" type="button">
+          <button data-diag="io" data-power-requirement="2" title="Requires Power Generation: 2" type="button">
             I/O DIAGNOSTICS
           </button>
         </div>
       </div>
 
-      <div class="action-section">
+      <div id="maintenanceSection" class="action-section hidden">
         <div class="action-title">SYSTEM MAINTENANCE</div>
-        <div id="repairControls" class="controls hidden">
-          <button data-repair="memory" data-power-cost="2" title="Power cost: 2" type="button">DEFRAGMENT MEMORY</button>
-          <button data-repair="storage" data-power-cost="2" title="Power cost: 2" type="button">REBUILD STORAGE INDEX</button>
-          <button data-repair="corruption" data-power-cost="2" title="Power cost: 2" type="button">PURGE CORRUPTED BLOCKS</button>
+        <div id="repairControls" class="controls">
+          <button class="hidden" data-repair="memory" data-power-requirement="3" title="Requires Power Generation: 3" type="button">
+            DEFRAGMENT MEMORY
+          </button>
+          <button class="hidden" data-repair="storage" data-power-requirement="2" title="Requires Power Generation: 2" type="button">
+            REBUILD STORAGE INDEX
+          </button>
+          <button class="hidden" data-repair="corruption" data-power-requirement="3" title="Requires Power Generation: 3" type="button">
+            PURGE CORRUPTED BLOCKS
+          </button>
         </div>
       </div>
     </section>
   </main>
+
+  <script src="state.js"></script>
+  <script src="ui.js"></script>
   <script src="game.js"></script>
 </body>
 
