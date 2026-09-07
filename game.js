@@ -19,7 +19,11 @@ function startPowerCycle() {
       updateResources();
     }
 
-    if (state.powerGeneration <= 0 && state.powerStorage <= 0) {
+    if (
+      state.powerGeneration <= 0 &&
+      state.powerStorage <= 0 &&
+      !state.isBusy
+    ) {
       await shutdownSystem();
     }
   }, GAME_CONFIG.generationTickMs);
@@ -29,6 +33,15 @@ function stopPowerCycle() {
   if (!powerCycleTimer) return;
   clearInterval(powerCycleTimer);
   powerCycleTimer = null;
+}
+
+async function finishProcess() {
+  setAllActionButtonsDisabled(false);
+  updateButtons();
+
+  if (state.powerGeneration <= 0 && state.powerStorage <= 0) {
+    await shutdownSystem();
+  }
 }
 
 async function bootSequence() {
@@ -230,9 +243,7 @@ async function runDiagnostic(type, button) {
   refreshActionUnlocks();
 
   button.remove();
-
-  setAllActionButtonsDisabled(false);
-  updateButtons();
+  await finishProcess();
 }
 
 async function runRepair(type, button) {
@@ -284,9 +295,7 @@ async function runRepair(type, button) {
   updateResources();
   updateSystemStatus();
   refreshActionUnlocks();
-
-  setAllActionButtonsDisabled(false);
-  updateButtons();
+  await finishProcess();
 }
 
 bootButton.addEventListener("click", bootSequence);
