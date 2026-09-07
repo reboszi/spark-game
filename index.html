@@ -14,6 +14,10 @@
       <button id="bootButton" type="button">BOOT</button>
     </div>
 
+    <div id="standbyScreen" class="standby-screen hidden" aria-live="polite">
+      <div class="standby-text">STANDBY</div>
+    </div>
+
     <section id="systemScreen" class="hidden">
       <div id="resources" class="resources hidden"></div>
 
@@ -22,43 +26,45 @@
         <div id="statusContent"></div>
       </div>
 
-      <div class="terminal">
-        <div id="terminalOutput" aria-live="polite"></div>
-      </div>
-
-      <div id="primaryControls" class="controls hidden">
-        <button id="systemDiagnosticsButton" type="button">RUN SYSTEM DIAGNOSTICS</button>
-      </div>
-
-      <div id="diagnosticSection" class="action-section hidden">
-        <div class="action-title">DIAGNOSTICS</div>
-        <div id="diagnosticControls" class="controls">
-          <button data-diag="memory" data-power-requirement="2" title="Requires Power Generation: 2" type="button">
-            MEMORY DIAGNOSTICS
-          </button>
-
-          <button data-diag="power" data-power-requirement="1" title="Requires Power Generation: 1" type="button">
-            POWER DIAGNOSTICS
-          </button>
-
-          <button data-diag="io" data-power-requirement="2" title="Requires Power Generation: 2" type="button">
-            I/O DIAGNOSTICS
-          </button>
+      <div class="main-area">
+        <div class="terminal">
+          <div id="terminalOutput" aria-live="polite"></div>
         </div>
-      </div>
 
-      <div id="maintenanceSection" class="action-section hidden">
-        <div class="action-title">SYSTEM MAINTENANCE</div>
-        <div id="repairControls" class="controls">
-          <button class="hidden" data-repair="memory" data-power-requirement="3" title="Requires Power Generation: 3" type="button">
-            DEFRAGMENT MEMORY
-          </button>
-          <button class="hidden" data-repair="storage" data-power-requirement="2" title="Requires Power Generation: 2" type="button">
-            REBUILD STORAGE INDEX
-          </button>
-          <button class="hidden" data-repair="corruption" data-power-requirement="3" title="Requires Power Generation: 3" type="button">
-            PURGE CORRUPTED BLOCKS
-          </button>
+        <div id="primaryControls" class="controls hidden">
+          <button id="systemDiagnosticsButton" type="button">RUN SYSTEM DIAGNOSTICS</button>
+        </div>
+
+        <div id="diagnosticSection" class="action-section hidden">
+          <div class="action-title">DIAGNOSTICS</div>
+          <div id="diagnosticControls" class="controls">
+            <button data-diag="memory" data-power-requirement="2" type="button">
+              MEMORY DIAGNOSTICS
+            </button>
+
+            <button data-diag="power" data-power-requirement="1" type="button">
+              POWER DIAGNOSTICS
+            </button>
+
+            <button data-diag="io" data-power-requirement="2" type="button">
+              I/O DIAGNOSTICS
+            </button>
+          </div>
+        </div>
+
+        <div id="maintenanceSection" class="action-section hidden">
+          <div class="action-title">SYSTEM MAINTENANCE</div>
+          <div id="repairControls" class="controls">
+            <button class="hidden" data-repair="memory" data-power-requirement="3" type="button">
+              DEFRAGMENT MEMORY
+            </button>
+            <button class="hidden" data-repair="storage" data-power-requirement="2" type="button">
+              REBUILD STORAGE INDEX
+            </button>
+            <button class="hidden" data-repair="corruption" data-power-requirement="3" type="button">
+              PURGE CORRUPTED BLOCKS
+            </button>
+          </div>
         </div>
       </div>
     </section>
