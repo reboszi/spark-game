@@ -17,6 +17,7 @@ function startPowerCycle() {
     if (state.powerGeneration > 0) {
       state.powerGeneration -= 1;
       updateResources();
+      saveGame();
     }
 
     if (
@@ -38,6 +39,7 @@ function stopPowerCycle() {
 async function finishProcess() {
   setAllActionButtonsDisabled(false);
   updateButtons();
+  saveGame();
 
   if (state.powerGeneration <= 0 && state.powerStorage <= 0) {
     await shutdownSystem();
@@ -46,8 +48,12 @@ async function finishProcess() {
 
 async function bootSequence() {
   bootButton.disabled = true;
+  continueButton.disabled = true;
+  newGameButton.disabled = true;
   bootScreen.classList.add("hidden");
   systemScreen.classList.remove("hidden");
+
+  clearMainScreen();
 
   await typeLine("BOOT SEQUENCE INITIATED", "status-line", 22);
   await sleep(350);
@@ -89,7 +95,10 @@ async function bootSequence() {
   await sleep(350);
   await typeLine("SYSTEM STATE: CRITICAL", "err", 18);
 
+  state.progression.hasBooted = true;
+  addLogEntry("Boot sequence completed.");
   primaryControls.classList.remove("hidden");
+  saveGame();
 }
 
 async function shutdownSystem() {
@@ -100,7 +109,7 @@ async function shutdownSystem() {
   setAllActionButtonsDisabled(true);
   hoveredPowerRequirement = null;
 
-  clearMainScreen();
+  saveGame();
   systemScreen.classList.add("hidden");
   standbyScreen.classList.remove("hidden");
 
@@ -109,27 +118,22 @@ async function shutdownSystem() {
   standbyScreen.classList.add("hidden");
   systemScreen.classList.remove("hidden");
 
-  await beginNextPowerCycle();
+  beginNextPowerCycle();
 }
 
-async function beginNextPowerCycle() {
-  clearMainScreen();
-
-  await typeLine("EXTERNAL POWER DETECTED", "status-line", 14);
-  await sleep(300);
-  await typeLine("INPUT LEVEL RISING...", "status-line", 14);
-  await sleep(500);
-
+function beginNextPowerCycle() {
   state.powerGeneration = GAME_CONFIG.generationStart;
   state.isShuttingDown = false;
   state.isBusy = false;
 
   updateResources();
   updateSystemStatus();
+  refreshDiagnosticButtons();
   refreshActionUnlocks();
   updateButtons();
 
-  await typeLine("AUTOMATIC RECOVERY COMPLETE", "status-line", 14);
+  addLogEntry("External power restored. System resumed.");
+  saveGame();
   startPowerCycle();
 }
 
@@ -183,13 +187,19 @@ async function runSystemDiagnostics() {
 
   state.revealed.powerGeneration = true;
   state.revealed.processingPower = true;
-  updateResources();
+  state.progression.systemDiagnosticsComplete = true;
 
+  addLogEntry("Ran system diagnostics.");
+  addLogEntry("Discovered power generation.");
+  addLogEntry("Discovered processing power.");
+
+  updateResources();
   primaryControls.classList.add("hidden");
-  diagnosticSection.classList.remove("hidden");
+  refreshDiagnosticButtons();
 
   setAllActionButtonsDisabled(false);
   updateButtons();
+  saveGame();
   startPowerCycle();
 }
 
@@ -198,10 +208,6 @@ async function runDiagnostic(type, button) {
 
   clearMainScreen();
   setAllActionButtonsDisabled(true);
-
-  const requirement = getProcessRequirement(button);
-  await typeLine(`${button.textContent.trim()} — POWER REQUIREMENT ${requirement}`, "dim", 5);
-  await typeLine("");
 
   if (type === "memory") {
     await typeLine("MEMORY DIAGNOSTICS", "status-line", 15);
@@ -214,6 +220,10 @@ async function runDiagnostic(type, button) {
     state.revealed.memory = true;
     state.statusRevealed.dataCorruption = true;
     state.diagnostics.memory = true;
+
+    addLogEntry("Ran memory diagnostics.");
+    addLogEntry("Discovered usable memory.");
+    addLogEntry("Detected data corruption.");
   }
 
   if (type === "power") {
@@ -226,6 +236,10 @@ async function runDiagnostic(type, button) {
 
     state.revealed.powerStorage = true;
     state.diagnostics.power = true;
+
+    addLogEntry("Ran power diagnostics.");
+    addLogEntry("Discovered periodic external generation.");
+    addLogEntry("Power storage unavailable.");
   }
 
   if (type === "io") {
@@ -241,69 +255,54 @@ async function runDiagnostic(type, button) {
     state.statusRevealed.integrity = true;
     state.statusRevealed.storageRecovered = true;
     state.diagnostics.io = true;
+
+    addLogEntry("Ran I/O diagnostics.");
+    addLogEntry("Detected damaged and unknown interfaces.");
   }
 
   updateResources();
   updateSystemStatus();
+  refreshDiagnosticButtons();
   refreshActionUnlocks();
-
-  button.remove();
   await finishProcess();
 }
 
-async function runRepair(type, button) {
+function runRepair(type, button) {
   if (!canRunProcess(button) || state.isBusy || state.isShuttingDown) return;
 
-  clearMainScreen();
-  setAllActionButtonsDisabled(true);
-
-  const requirement = getProcessRequirement(button);
-  await typeLine(`${button.textContent.trim()} — POWER REQUIREMENT ${requirement}`, "dim", 5);
-  await typeLine("");
-
   if (type === "memory") {
-    await typeLine("DEFRAGMENTING MEMORY...", "status-line", 12);
-    await sleep(450);
-
     const gained = 3;
     state.memory = Math.min(state.memoryMax, state.memory + gained);
     state.status.dataCorruption = Math.max(0, state.status.dataCorruption - 2);
-
-    await typeLine(`Recovered usable memory: +${gained}`, "status-line", 10);
     state.statusRevealed.dataCorruption = true;
+    addLogEntry(`Recovered memory: +${gained}.`);
   }
 
   if (type === "storage") {
-    await typeLine("REBUILDING STORAGE INDEX...", "status-line", 12);
-    await sleep(450);
-
     const gained = 0.5;
     state.status.storageRecovered = Math.min(100, state.status.storageRecovered + gained);
-
-    await typeLine(`Storage recovery increased: +${gained}%`, "status-line", 10);
     state.statusRevealed.storageRecovered = true;
+    addLogEntry(`Storage recovery: +${gained}%.`);
   }
 
   if (type === "corruption") {
-    await typeLine("PURGING CORRUPTED DATA BLOCKS...", "status-line", 12);
-    await sleep(450);
-
     const cleaned = 4;
     state.status.dataCorruption = Math.max(0, state.status.dataCorruption - cleaned);
     state.status.integrity = Math.min(100, state.status.integrity + 1);
-
-    await typeLine(`Data corruption reduced: -${cleaned}%`, "status-line", 10);
     state.statusRevealed.dataCorruption = true;
     state.statusRevealed.integrity = true;
+    addLogEntry(`Purged corrupted data: -${cleaned}%.`);
   }
 
   updateResources();
   updateSystemStatus();
   refreshActionUnlocks();
-  await finishProcess();
+  saveGame();
 }
 
 bootButton.addEventListener("click", bootSequence);
+continueButton.addEventListener("click", restoreSavedGame);
+newGameButton.addEventListener("click", startNewGame);
 systemDiagnosticsButton.addEventListener("click", runSystemDiagnostics);
 
 diagnosticControls.addEventListener("click", event => {
@@ -317,3 +316,5 @@ repairControls.addEventListener("click", event => {
   if (!button) return;
   runRepair(button.dataset.repair, button);
 });
+
+configureStartMenu();
