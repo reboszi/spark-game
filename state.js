@@ -28,19 +28,22 @@ const state = {
 
   status: {
     operatingSystem: "ONLINE",
-    localNetwork: "OFFLINE",
-    communications: "OFFLINE",
-    externalInterfaces: "OFFLINE",
-    primaryPower: "OFFLINE",
-    backupPower: "OFFLINE",
+    systemIntegrity: 0,
+
+    primaryPower: "ERROR",
+    backupPower: "RESTART REQUIRED",
     emergencyPower: "ONLINE",
-    memoryIntegrity: "UNKNOWN",
+
+    memoryIntegrity: "SEVERE",
     storageAccess: "PARTIAL",
-    sensorNetwork: "OFFLINE",
-    maintenanceSystems: "NO RESPONSE",
-    integrity: 7,
-    dataCorruption: 81,
-    storageRecovered: 0.5
+    storageRecovered: 0.5,
+    corruptedArchivesFound: 0,
+    archive01: "CORRUPTED",
+
+    sensors: "DETECTED",
+    manipulators: "DETECTED",
+    communications: "DETECTED",
+    unknownInterfaces: "DETECTED"
   },
 
   revealed: {
@@ -52,24 +55,33 @@ const state = {
 
   statusRevealed: {
     operatingSystem: false,
-    localNetwork: false,
-    communications: false,
-    externalInterfaces: false,
+    systemIntegrity: false,
+
     primaryPower: false,
     backupPower: false,
     emergencyPower: false,
+
     memoryIntegrity: false,
     storageAccess: false,
-    sensorNetwork: false,
-    maintenanceSystems: false,
-    integrity: false,
-    dataCorruption: false,
-    storageRecovered: false
+    storageRecovered: false,
+    corruptedArchivesFound: false,
+    archive01: false,
+
+    sensors: false,
+    manipulators: false,
+    communications: false,
+    unknownInterfaces: false
   },
 
   diagnostics: {
     memory: false,
     power: false,
     io: false
+  },
+
+  actions: {
+    archive01Repaired: false,
+    backupRestarted: false,
+    primaryPowerRepaired: false
   }
 };
