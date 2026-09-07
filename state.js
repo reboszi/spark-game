@@ -1,6 +1,7 @@
 const GAME_CONFIG = {
   generationStart: 8,
-  generationTickMs: 12000
+  generationTickMs: 12000,
+  standbyDurationMs: 3200
 };
 
 const state = {
@@ -20,7 +21,8 @@ const state = {
 
   status: {
     operatingSystem: "ONLINE",
-    network: "OFFLINE",
+    localNetwork: "OFFLINE",
+    communications: "OFFLINE",
     externalInterfaces: "OFFLINE",
     primaryPower: "OFFLINE",
     backupPower: "OFFLINE",
@@ -30,7 +32,7 @@ const state = {
     sensorNetwork: "OFFLINE",
     maintenanceSystems: "NO RESPONSE",
     integrity: 7,
-    corruption: 81,
+    dataCorruption: 81,
     storageRecovered: 0.5
   },
 
@@ -43,7 +45,8 @@ const state = {
 
   statusRevealed: {
     operatingSystem: false,
-    network: false,
+    localNetwork: false,
+    communications: false,
     externalInterfaces: false,
     primaryPower: false,
     backupPower: false,
@@ -53,7 +56,7 @@ const state = {
     sensorNetwork: false,
     maintenanceSystems: false,
     integrity: false,
-    corruption: false,
+    dataCorruption: false,
     storageRecovered: false
   },
 
