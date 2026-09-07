@@ -1,5 +1,5 @@
 :root {
-  --resources-height: 36px;
+  --resources-height: 40px;
   --bg: #050805;
   --panel: #071007;
   --green: #76ff76;
@@ -10,7 +10,7 @@
 }
 
 * {
-  box-sizing: border-box
+  box-sizing: border-box;
 }
 
 body {
@@ -19,14 +19,12 @@ body {
   background: var(--bg);
   color: var(--green);
   font-family: "Courier New", monospace;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 24px;
 }
 
 #game {
-  width: min(920px, 100%);
+  width: min(760px, calc(100% - 48px));
+  margin: 0 auto;
 }
 
 .center {
@@ -63,7 +61,7 @@ button:disabled {
 }
 
 .hidden {
-  display: none !important
+  display: none !important;
 }
 
 .terminal {
@@ -78,17 +76,6 @@ button:disabled {
   white-space: pre-wrap;
   line-height: 1.45;
   min-height: 320px;
-}
-
-.cursor::after {
-  content: "█";
-  animation: blink 1s steps(1) infinite;
-}
-
-@keyframes blink {
-  50% {
-    opacity: 0
-  }
 }
 
 .controls {
@@ -111,17 +98,19 @@ button:disabled {
 
 .resources {
   position: fixed;
-  height: var(--resources-height);
+  min-height: var(--resources-height);
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 8px 12px;
+  justify-content: center;
+  gap: 28px;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--line);
   background: #061006;
+  flex-wrap: wrap;
 }
 
 .resource {
@@ -141,14 +130,25 @@ button:disabled {
 }
 
 .section-title {
-  margin-top: 16px;
   color: var(--dim);
   font-size: .8rem;
   letter-spacing: .12em;
 }
 
 .status-line {
-  color: var(--green)
+  color: var(--green);
+}
+
+.warn {
+  color: var(--warn);
+}
+
+.err {
+  color: var(--err);
+}
+
+.dim {
+  color: var(--dim);
 }
 
 #systemScreen {
@@ -169,7 +169,6 @@ button:disabled {
 }
 
 .system-status .section-title {
-  margin-top: 0;
   margin-bottom: 20px;
 }
 
@@ -178,36 +177,72 @@ button:disabled {
   align-items: baseline;
   gap: 6px;
   padding: 3px 0;
+  white-space: nowrap;
+}
+
+.status-label {
+  flex: 0 1 auto;
 }
 
 .status-dots {
   flex: 1;
+  min-width: 12px;
   border-bottom: 1px dotted var(--dim);
   transform: translateY(-3px);
 }
 
-.warn {
-  color: var(--warn)
-}
-
-.err {
-  color: var(--err)
-}
-
-.dim {
-  color: var(--dim)
-}
-
-@media (max-width:600px) {
-  body {
-    padding: 12px
+@media (max-width: 1100px) {
+  .system-status {
+    width: 280px;
   }
 
+  #game {
+    width: min(680px, calc(100% - 32px));
+  }
+}
+
+@media (max-width: 900px) {
+  body {
+    padding: 12px;
+  }
+
+  #game {
+    width: 100%;
+  }
+
+  #systemScreen {
+    padding-top: 60px;
+  }
+
+  .system-status {
+    position: static;
+    width: 100%;
+    max-height: 220px;
+    margin-bottom: 12px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .resources {
+    justify-content: flex-start;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 600px) {
   .terminal {
-    padding: 12px
+    padding: 12px;
   }
 
   button {
-    width: 100%
+    width: 100%;
+  }
+
+  .resource-name {
+    font-size: .7rem;
+  }
+
+  .resource-value {
+    font-size: .82rem;
   }
 }
