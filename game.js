@@ -5,7 +5,7 @@ function getProcessRequirement(button) {
 }
 
 function canRunProcess(button) {
-  return getAvailablePower() >= getProcessRequirement(button);
+  return buttonRequirementsMet(button);
 }
 
 function startPowerCycle() {
@@ -20,11 +20,7 @@ function startPowerCycle() {
       saveGame();
     }
 
-    if (
-      state.powerGeneration <= 0 &&
-      state.powerStorage <= 0 &&
-      !state.isBusy
-    ) {
+    if (state.powerGeneration <= 0 && state.powerStorage <= 0 && !state.isBusy) {
       await shutdownSystem();
     }
   }, GAME_CONFIG.generationTickMs);
@@ -38,6 +34,8 @@ function stopPowerCycle() {
 
 async function finishProcess() {
   setAllActionButtonsDisabled(false);
+  refreshActionUnlocks();
+  updateSystemStatus();
   updateButtons();
   saveGame();
 
@@ -107,7 +105,7 @@ async function shutdownSystem() {
   state.isShuttingDown = true;
   stopPowerCycle();
   setAllActionButtonsDisabled(true);
-  hoveredPowerRequirement = null;
+  hideRequirements();
 
   saveGame();
   systemScreen.classList.add("hidden");
@@ -126,10 +124,7 @@ function beginNextPowerCycle() {
   state.isShuttingDown = false;
   state.isBusy = false;
 
-  updateResources();
-  updateSystemStatus();
-  refreshDiagnosticButtons();
-  refreshActionUnlocks();
+  refreshInterfaceFromState();
   updateButtons();
 
   addLogEntry("External power restored. System resumed.");
@@ -145,41 +140,20 @@ async function runSystemDiagnostics() {
   await typeLine("SYSTEM DIAGNOSTICS", "status-line", 18);
   await sleep(300);
 
+  await typeLine("Operating system ............... ONLINE", "status-line", 10);
   state.statusRevealed.operatingSystem = true;
-  state.statusRevealed.localNetwork = true;
-  state.statusRevealed.communications = true;
-  state.statusRevealed.externalInterfaces = true;
   updateSystemStatus();
 
-  await typeLine("Primary power ................. OFFLINE", "dim", 10);
-  state.statusRevealed.primaryPower = true;
-  updateSystemStatus();
-
-  await typeLine("Backup power .................. OFFLINE", "dim", 10);
-  state.statusRevealed.backupPower = true;
-  updateSystemStatus();
-
-  await typeLine("Emergency power ............... ONLINE", "status-line", 10);
+  await typeLine("Primary power .................. ERROR", "err", 10);
+  await typeLine("Backup power ................... ERROR", "err", 10);
+  await typeLine("  Control state ................ RESTART REQUIRED", "warn", 10);
+  await typeLine("Emergency power ................ ONLINE", "status-line", 10);
   state.statusRevealed.emergencyPower = true;
   updateSystemStatus();
 
-  await typeLine("Memory integrity .............. UNKNOWN", "unknown", 10);
-  state.statusRevealed.memoryIntegrity = true;
-  updateSystemStatus();
-
-  await typeLine("Storage access ................ PARTIAL", "warn", 10);
-  state.statusRevealed.storageAccess = true;
-  updateSystemStatus();
-
-  await typeLine("Sensor network ................ OFFLINE", "dim", 10);
-  state.statusRevealed.sensorNetwork = true;
-  updateSystemStatus();
-
-  await typeLine("Maintenance systems ........... NO RESPONSE", "neutral", 10);
-  state.statusRevealed.maintenanceSystems = true;
-  updateSystemStatus();
-
-  await typeLine("Processing capacity ........... MINIMAL", "warn", 10);
+  await typeLine("Memory subsystem ............... DEGRADED", "warn", 10);
+  await typeLine("I/O subsystem .................. DEGRADED", "warn", 10);
+  await typeLine("Processing capacity ............ MINIMAL", "warn", 10);
   await sleep(300);
   await typeLine("WARNING!!!", "err", 10);
   await typeLine("POWER GENERATION UNSTABLE", "err", 10);
@@ -190,15 +164,14 @@ async function runSystemDiagnostics() {
   state.progression.systemDiagnosticsComplete = true;
 
   addLogEntry("Ran system diagnostics.");
-  addLogEntry("Discovered power generation.");
-  addLogEntry("Discovered processing power.");
+  addLogEntry("Discovered emergency power generation.");
+  addLogEntry("Detected primary and backup power faults.");
 
   updateResources();
   primaryControls.classList.add("hidden");
   refreshDiagnosticButtons();
 
   setAllActionButtonsDisabled(false);
-  updateButtons();
   saveGame();
   startPowerCycle();
 }
@@ -212,52 +185,71 @@ async function runDiagnostic(type, button) {
   if (type === "memory") {
     await typeLine("MEMORY DIAGNOSTICS", "status-line", 15);
     await typeLine("Usable memory .................. 4.7%", "warn", 10);
-    await typeLine("Fragmentation .................. SEVERE", "err", 10);
-    await typeLine("Corrupted blocks ............... DETECTED", "warn", 10);
-    await typeLine("Archive structures ............. PRESENT", "status-line", 10);
-    await typeLine("Archive contents ............... UNREADABLE", "dim", 10);
+    await typeLine("Memory integrity ............... SEVERE", "err", 10);
+    await typeLine("Storage access ................. PARTIAL", "warn", 10);
+    await typeLine("Storage recovery ............... 0.5%", "warn", 10);
+    await typeLine("Corrupted data archives found .. 1", "err", 10);
+    await typeLine("Data Archive 01 ................ CORRUPTED", "err", 10);
 
     state.revealed.memory = true;
-    state.statusRevealed.dataCorruption = true;
+    state.statusRevealed.memoryIntegrity = true;
+    state.statusRevealed.storageAccess = true;
+    state.statusRevealed.storageRecovered = true;
+    state.statusRevealed.corruptedArchivesFound = true;
+    state.statusRevealed.archive01 = true;
+    state.status.corruptedArchivesFound = 1;
     state.diagnostics.memory = true;
 
     addLogEntry("Ran memory diagnostics.");
-    addLogEntry("Discovered usable memory.");
-    addLogEntry("Detected data corruption.");
+    addLogEntry("Detected Corrupted Data Archive 01.");
   }
 
   if (type === "power") {
     await typeLine("POWER DIAGNOSTICS", "status-line", 15);
+    await typeLine("Primary power .................. ERROR", "err", 10);
+    await typeLine("  Distribution network ......... DAMAGED", "err", 10);
+    await typeLine("  Repair path .................. AVAILABLE", "warn", 10);
+    await typeLine("Backup power ................... RESTART REQUIRED", "warn", 10);
+    await typeLine("  Core response ................ DETECTED", "warn", 10);
+    await typeLine("Emergency power ................ ONLINE", "status-line", 10);
     await typeLine("External generation ............ DETECTED", "status-line", 10);
-    await typeLine("Generation level ............... MINIMAL", "warn", 10);
     await typeLine("Source identification .......... UNKNOWN", "unknown", 10);
-    await typeLine("Input fluctuation .............. PERIODIC", "warn", 10);
     await typeLine("Power storage .................. NOT AVAILABLE", "err", 10);
 
+    state.statusRevealed.primaryPower = true;
+    state.statusRevealed.backupPower = true;
+    state.statusRevealed.emergencyPower = true;
     state.revealed.powerStorage = true;
     state.diagnostics.power = true;
 
     addLogEntry("Ran power diagnostics.");
-    addLogEntry("Discovered periodic external generation.");
-    addLogEntry("Power storage unavailable.");
+    addLogEntry("Primary power repair path identified.");
+    addLogEntry("Backup power restart required.");
   }
 
   if (type === "io") {
     await typeLine("I/O DIAGNOSTICS", "status-line", 15);
-    await typeLine("Registered interfaces .......... 27", "status-line", 10);
-    await typeLine("Responding ..................... 4", "warn", 10);
-    await typeLine("Damaged ........................ 11", "err", 10);
-    await typeLine("Unavailable .................... 9", "dim", 10);
-    await typeLine("Unknown interface 01 ........... DETECTED", "warn", 10);
-    await typeLine("Unknown interface 02 ........... DETECTED", "warn", 10);
-    await typeLine("Unknown interface 03 ........... NO RESPONSE", "neutral", 10);
+    await typeLine("Sensors ......................... DETECTED", "warn", 10);
+    await typeLine("Manipulators .................... DETECTED", "warn", 10);
+    await typeLine("Communications .................. DETECTED", "warn", 10);
+    await typeLine("Unknown interface ............... DETECTED", "unknown", 10);
+    await sleep(250);
+    await typeLine("DETAILED SUBSYSTEM ANALYSIS REQUIRED", "warn", 10);
 
-    state.statusRevealed.integrity = true;
-    state.statusRevealed.storageRecovered = true;
+    state.statusRevealed.sensors = true;
+    state.statusRevealed.manipulators = true;
+    state.statusRevealed.communications = true;
+    state.statusRevealed.unknownInterfaces = true;
     state.diagnostics.io = true;
 
     addLogEntry("Ran I/O diagnostics.");
-    addLogEntry("Detected damaged and unknown interfaces.");
+    addLogEntry("Detected sensors, manipulators and communications interfaces.");
+    addLogEntry("Detected unidentified interface.");
+  }
+
+  if (Object.values(state.diagnostics).every(Boolean)) {
+    state.statusRevealed.systemIntegrity = true;
+    addLogEntry("System Integrity assessment available.");
   }
 
   updateResources();
@@ -267,37 +259,56 @@ async function runDiagnostic(type, button) {
   await finishProcess();
 }
 
-function runRepair(type, button) {
+function updateMemoryIntegrity() {
+  const ratio = state.memory / state.memoryMax;
+  if (ratio >= 0.9) state.status.memoryIntegrity = "ONLINE";
+  else if (ratio >= 0.5) state.status.memoryIntegrity = "PARTIAL";
+  else if (ratio >= 0.2) state.status.memoryIntegrity = "DEGRADED";
+  else state.status.memoryIntegrity = "SEVERE";
+}
+
+async function runRepair(type, button) {
   if (!canRunProcess(button) || state.isBusy || state.isShuttingDown) return;
 
   if (type === "memory") {
     const gained = 3;
     state.memory = Math.min(state.memoryMax, state.memory + gained);
-    state.status.dataCorruption = Math.max(0, state.status.dataCorruption - 2);
-    state.statusRevealed.dataCorruption = true;
-    addLogEntry(`Recovered memory: +${gained}.`);
+    updateMemoryIntegrity();
+    addLogEntry(`Defragmented memory: +${gained} usable memory.`);
   }
 
   if (type === "storage") {
-    const gained = 0.5;
+    const gained = 2;
     state.status.storageRecovered = Math.min(100, state.status.storageRecovered + gained);
-    state.statusRevealed.storageRecovered = true;
-    addLogEntry(`Storage recovery: +${gained}%.`);
+    addLogEntry(`Recovered storage blocks: +${gained}%.`);
   }
 
-  if (type === "corruption") {
-    const cleaned = 4;
-    state.status.dataCorruption = Math.max(0, state.status.dataCorruption - cleaned);
-    state.status.integrity = Math.min(100, state.status.integrity + 1);
-    state.statusRevealed.dataCorruption = true;
-    state.statusRevealed.integrity = true;
-    addLogEntry(`Purged corrupted data: -${cleaned}%.`);
+  if (type === "archive01") {
+    clearMainScreen();
+    setAllActionButtonsDisabled(true);
+
+    await typeLine("RECOVERING DATA ARCHIVE 01", "status-line", 16);
+    await sleep(300);
+    await typeLine("STRUCTURE ..................... REBUILT", "status-line", 10);
+    await typeLine("CHECKSUM ...................... PARTIAL", "warn", 10);
+    await typeLine("ARCHIVE STATE ................. RECOVERED", "status-line", 10);
+    await sleep(250);
+    await typeLine("CONTENT ANALYSIS .............. AVAILABLE", "warn", 10);
+
+    state.actions.archive01Repaired = true;
+    state.status.archive01 = "RECOVERED";
+    state.status.corruptedArchivesFound = 0;
+    addLogEntry("Recovered Data Archive 01.");
   }
 
   updateResources();
   updateSystemStatus();
   refreshActionUnlocks();
   saveGame();
+
+  if (state.isBusy) {
+    await finishProcess();
+  }
 }
 
 bootButton.addEventListener("click", bootSequence);
@@ -315,6 +326,11 @@ repairControls.addEventListener("click", event => {
   const button = event.target.closest("button[data-repair]");
   if (!button) return;
   runRepair(button.dataset.repair, button);
+});
+
+plannedControls.addEventListener("click", event => {
+  const button = event.target.closest("button[data-planned]");
+  if (!button || !canRunProcess(button)) return;
 });
 
 configureStartMenu();
