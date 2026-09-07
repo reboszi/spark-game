@@ -11,7 +11,11 @@
 <body>
   <main id="game">
     <div id="bootScreen" class="center">
-      <button id="bootButton" type="button">BOOT</button>
+      <div class="start-menu">
+        <button id="bootButton" type="button">BOOT</button>
+        <button id="continueButton" class="hidden" type="button">CONTINUE</button>
+        <button id="newGameButton" class="hidden" type="button">NEW GAME</button>
+      </div>
     </div>
 
     <div id="standbyScreen" class="standby-screen hidden" aria-live="polite">
@@ -24,6 +28,11 @@
       <div id="systemStatus" class="system-status hidden">
         <div class="section-title">SYSTEM STATUS</div>
         <div id="statusContent"></div>
+      </div>
+
+      <div id="activityLog" class="activity-log hidden">
+        <div class="section-title">ACTIVITY LOG</div>
+        <div id="logContent"></div>
       </div>
 
       <div class="main-area">
@@ -72,6 +81,7 @@
 
   <script src="state.js"></script>
   <script src="ui.js"></script>
+  <script src="save.js"></script>
   <script src="game.js"></script>
 </body>
 
