@@ -25,56 +25,54 @@
     <section id="systemScreen" class="hidden">
       <div id="resources" class="resources hidden"></div>
 
-      <div id="systemStatus" class="system-status hidden">
-        <div class="section-title">SYSTEM STATUS</div>
+      <aside id="systemStatus" class="system-status hidden">
+        <div class="panel-main-title">SYSTEM STATUS</div>
         <div id="statusContent"></div>
-      </div>
+      </aside>
 
-      <div id="activityLog" class="activity-log hidden">
-        <div class="section-title">ACTIVITY LOG</div>
+      <aside id="activityLog" class="activity-log hidden">
+        <div class="panel-main-title">ACTIVITY LOG</div>
         <div id="logContent"></div>
-      </div>
+      </aside>
 
       <div class="main-area">
         <div class="terminal">
           <div id="terminalOutput" aria-live="polite"></div>
         </div>
 
-        <div id="primaryControls" class="controls hidden">
+        <section id="primaryControls" class="controls primary-controls hidden">
           <button id="systemDiagnosticsButton" type="button">RUN SYSTEM DIAGNOSTICS</button>
-        </div>
+        </section>
 
-        <div id="diagnosticSection" class="action-section hidden">
-          <div class="action-title">DIAGNOSTICS</div>
-          <div id="diagnosticControls" class="controls">
-            <button data-diag="memory" data-power-requirement="2" type="button">
-              MEMORY DIAGNOSTICS
-            </button>
-
-            <button data-diag="power" data-power-requirement="1" type="button">
-              POWER DIAGNOSTICS
-            </button>
-
-            <button data-diag="io" data-power-requirement="2" type="button">
-              I/O DIAGNOSTICS
-            </button>
+        <details id="diagnosticSection" class="action-panel hidden" open>
+          <summary>DIAGNOSTICS</summary>
+          <div id="diagnosticControls" class="controls action-grid">
+            <button data-diag="memory" data-power-requirement="2" type="button">MEMORY DIAGNOSTICS</button>
+            <button data-diag="power" data-power-requirement="1" type="button">POWER DIAGNOSTICS</button>
+            <button data-diag="io" data-power-requirement="2" type="button">I/O DIAGNOSTICS</button>
           </div>
-        </div>
+        </details>
 
-        <div id="maintenanceSection" class="action-section hidden">
-          <div class="action-title">SYSTEM MAINTENANCE</div>
-          <div id="repairControls" class="controls">
-            <button class="hidden" data-repair="memory" data-power-requirement="3" type="button">
-              DEFRAGMENT MEMORY
-            </button>
-            <button class="hidden" data-repair="storage" data-power-requirement="2" type="button">
-              REBUILD STORAGE INDEX
-            </button>
-            <button class="hidden" data-repair="corruption" data-power-requirement="3" type="button">
-              PURGE CORRUPTED BLOCKS
-            </button>
+        <details id="maintenanceSection" class="action-panel hidden" open>
+          <summary>SYSTEM MAINTENANCE</summary>
+          <div id="repairControls" class="controls action-grid">
+            <button class="hidden" data-repair="memory" data-power-requirement="3" type="button">DEFRAGMENT MEMORY</button>
+            <button class="hidden" data-repair="storage" data-power-requirement="2" type="button">RECOVER STORAGE BLOCKS</button>
+            <button class="hidden" data-repair="archive01" data-power-requirement="2" type="button">REPAIR DATA ARCHIVE 01</button>
           </div>
-        </div>
+        </details>
+
+        <details id="plannedSection" class="action-panel hidden" open>
+          <summary>PLANNED OPERATIONS</summary>
+          <div id="plannedControls" class="controls action-grid">
+            <button class="planned-action hidden" data-planned="backup" data-power-requirement="4" data-processing-requirement="2" type="button">RESTART BACKUP POWER</button>
+            <button class="planned-action hidden" data-planned="primary" data-power-requirement="6" data-processing-requirement="3" type="button">REPAIR PRIMARY POWER</button>
+            <button class="planned-action hidden" data-planned="sensors" data-power-requirement="3" data-processing-requirement="2" type="button">SENSOR DIAGNOSTICS</button>
+            <button class="planned-action hidden" data-planned="manipulators" data-power-requirement="4" data-processing-requirement="2" type="button">MANIPULATOR DIAGNOSTICS</button>
+            <button class="planned-action hidden" data-planned="communications" data-power-requirement="3" data-processing-requirement="2" type="button">COMMUNICATIONS DIAGNOSTICS</button>
+            <button class="planned-action hidden" data-planned="unknown" data-power-requirement="5" data-processing-requirement="3" type="button">ANALYZE UNKNOWN INTERFACE</button>
+          </div>
+        </details>
       </div>
     </section>
   </main>
