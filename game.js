@@ -87,9 +87,6 @@ async function bootSequence() {
   await typeLine("KERNEL ....................... ONLINE", "status-line", 12);
   await typeLine("MEMORY ACCESS ................ PARTIAL", "warn", 12);
   await typeLine("PRIMARY STORAGE .............. DEGRADED", "warn", 12);
-  await typeLine("LOCAL NETWORK ................ OFFLINE", "dim", 12);
-  await typeLine("COMMUNICATIONS ............... OFFLINE", "dim", 12);
-  await typeLine("EXTERNAL INTERFACE ........... OFFLINE", "dim", 12);
   await sleep(350);
   await typeLine("SYSTEM STATE: CRITICAL", "err", 18);
 
@@ -146,7 +143,6 @@ async function runSystemDiagnostics() {
 
   await typeLine("Primary power .................. ERROR", "err", 10);
   await typeLine("Backup power ................... ERROR", "err", 10);
-  await typeLine("  Control state ................ RESTART REQUIRED", "warn", 10);
   await typeLine("Emergency power ................ ONLINE", "status-line", 10);
   state.statusRevealed.emergencyPower = true;
   updateSystemStatus();
@@ -185,19 +181,16 @@ async function runDiagnostic(type, button) {
   if (type === "memory") {
     await typeLine("MEMORY DIAGNOSTICS", "status-line", 15);
     await typeLine("Usable memory .................. 4.7%", "warn", 10);
-    await typeLine("Memory integrity ............... SEVERE", "err", 10);
-    await typeLine("Storage access ................. PARTIAL", "warn", 10);
-    await typeLine("Storage recovery ............... 0.5%", "warn", 10);
+    await typeLine("Memory integrity ............... 5%", "err", 10);
+    await typeLine("Storage recovery ............... 2%", "err", 10);
     await typeLine("Corrupted data archives found .. 1", "err", 10);
     await typeLine("Data Archive 01 ................ CORRUPTED", "err", 10);
 
     state.revealed.memory = true;
-    state.statusRevealed.memoryIntegrity = true;
-    state.statusRevealed.storageAccess = true;
+    state.status.memoryIntegrity = 5;
+    state.status.storageRecovered = 2;
     state.statusRevealed.storageRecovered = true;
-    state.statusRevealed.corruptedArchivesFound = true;
     state.statusRevealed.archive01 = true;
-    state.status.corruptedArchivesFound = 1;
     state.diagnostics.memory = true;
 
     addLogEntry("Ran memory diagnostics.");
@@ -206,11 +199,13 @@ async function runDiagnostic(type, button) {
 
   if (type === "power") {
     await typeLine("POWER DIAGNOSTICS", "status-line", 15);
-    await typeLine("Primary power .................. ERROR", "err", 10);
-    await typeLine("  Distribution network ......... DAMAGED", "err", 10);
-    await typeLine("  Repair path .................. AVAILABLE", "warn", 10);
-    await typeLine("Backup power ................... RESTART REQUIRED", "warn", 10);
-    await typeLine("  Core response ................ DETECTED", "warn", 10);
+    await typeLine("Primary power .................. DAMAGED", "err", 10);
+    await typeLine("  Diagnostics .................. UNAVAILABLE", "dim", 10);
+    await typeLine("  Required interface ........... REPAIR DRONE", "unknown", 10);
+    await typeLine("Backup generator ............... HYDRAZINE THERMAL CELL", "warn", 10);
+    await typeLine("  Generator state .............. RESTART REQUIRED", "warn", 10);
+    await typeLine("  Hydrazine valve .............. BLOCKED", "err", 10);
+    await typeLine("  Recovery method .............. EMERGENCY POWER FEEDBACK LOOP", "warn", 10);
     await typeLine("Emergency power ................ ONLINE", "status-line", 10);
     await typeLine("External generation ............ DETECTED", "status-line", 10);
     await typeLine("Source identification .......... UNKNOWN", "unknown", 10);
@@ -223,8 +218,9 @@ async function runDiagnostic(type, button) {
     state.diagnostics.power = true;
 
     addLogEntry("Ran power diagnostics.");
-    addLogEntry("Primary power repair path identified.");
-    addLogEntry("Backup power restart required.");
+    addLogEntry("Primary power diagnostics require a repair drone.");
+    addLogEntry("Backup generator identified as Hydrazine Thermal Cell.");
+    addLogEntry("Backup hydrazine valve blocked; emergency feedback loop planned.");
   }
 
   if (type === "io") {
@@ -260,11 +256,7 @@ async function runDiagnostic(type, button) {
 }
 
 function updateMemoryIntegrity() {
-  const ratio = state.memory / state.memoryMax;
-  if (ratio >= 0.9) state.status.memoryIntegrity = "ONLINE";
-  else if (ratio >= 0.5) state.status.memoryIntegrity = "PARTIAL";
-  else if (ratio >= 0.2) state.status.memoryIntegrity = "DEGRADED";
-  else state.status.memoryIntegrity = "SEVERE";
+  state.status.memoryIntegrity = Math.round((state.memory / state.memoryMax) * 100);
 }
 
 async function runRepair(type, button) {
@@ -297,7 +289,6 @@ async function runRepair(type, button) {
 
     state.actions.archive01Repaired = true;
     state.status.archive01 = "RECOVERED";
-    state.status.corruptedArchivesFound = 0;
     addLogEntry("Recovered Data Archive 01.");
   }
 
