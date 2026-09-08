@@ -60,7 +60,9 @@ function updateTaskBar() {
   }
 
   runningTasksBar.innerHTML = items.join('<span class="taskbar-divider">|</span>');
-  runningTasksBar.classList.toggle("hidden", items.length === 0);
+  const visible = items.length > 0;
+  runningTasksBar.classList.toggle("hidden", !visible);
+  systemScreen.classList.toggle("tasks-visible", visible);
 }
 
 runningTasksBar.addEventListener("click", event => {
