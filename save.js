@@ -36,7 +36,7 @@ function saveGame() {
   savedState.isShuttingDown = false;
 
   const payload = {
-    version: 1,
+    version: 2,
     savedAt: Date.now(),
     state: savedState,
     mainScreenHtml: terminal.innerHTML
@@ -63,6 +63,12 @@ function loadSaveGame() {
       migrated = true;
     }
 
+    if (state.progression.systemDiagnosticsComplete && !state.revealed.systemTime) {
+      state.revealed.systemTime = true;
+      if (payload.state?.revealed) payload.state.revealed.systemTime = true;
+      migrated = true;
+    }
+
     const originalHtml = payload.mainScreenHtml || "";
     const migratedHtml = migrateSavedScreenHtml(originalHtml);
     terminal.innerHTML = migratedHtml;
@@ -73,6 +79,7 @@ function loadSaveGame() {
     }
 
     if (migrated) {
+      payload.version = 2;
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     }
 
@@ -106,11 +113,15 @@ function restoreSavedGame() {
 
   if (state.powerGeneration <= 0 && state.powerStorage <= 0) {
     state.powerGeneration = GAME_CONFIG.generationStart;
+    resetSystemResetCountdown();
   }
 
   refreshInterfaceFromState();
+  updateTaskBar();
+  refreshShellPanels();
 
   if (state.progression.systemDiagnosticsComplete) {
+    startRuntimeClock();
     startPowerCycle();
   }
 }
