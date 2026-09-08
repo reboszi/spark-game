@@ -29,6 +29,7 @@ function startRuntimeClock() {
 
     if (!state.isShuttingDown && state.powerGeneration > 0) {
       state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - 1);
+      tickTasks();
     }
 
     updateResources();
