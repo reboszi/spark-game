@@ -1,6 +1,6 @@
 :root {
   --resources-height: 48px;
-  --taskbar-height: 32px;
+  --taskbar-height: 48px;
   --top-shell-height: calc(var(--resources-height) + var(--taskbar-height));
   --bg: #050805;
   --panel: #071007;
@@ -58,14 +58,20 @@ button[data-special-requirement]::after{ content:"REQ: " attr(data-special-requi
 .action-grid button{ width:100%; min-height:46px; }
 
 .resources{ position:fixed; min-height:var(--resources-height); top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:flex-start; gap:18px; padding:6px 18px; border-bottom:1px solid var(--line); background:#061006; flex-wrap:wrap; }
-.running-tasks-bar{ position:fixed; top:var(--resources-height); left:0; right:0; min-height:var(--taskbar-height); z-index:99; display:flex; align-items:center; justify-content:flex-start; gap:12px; padding:5px 18px; border-bottom:1px solid var(--line); background:#040a04; font-size:.76rem; letter-spacing:.06em; overflow-x:auto; }
-.taskbar-item{ display:inline-flex; align-items:baseline; gap:7px; color:var(--neutral); white-space:nowrap; }
-.taskbar-item strong{ color:var(--green); font-weight:normal; }
+.running-tasks-bar{ position:fixed; top:var(--resources-height); left:340px; right:320px; height:var(--taskbar-height); z-index:99; display:flex; align-items:center; justify-content:flex-start; gap:12px; padding:5px 14px; border-bottom:1px solid var(--line); border-left:1px solid var(--line); border-right:1px solid var(--line); background:#040a04; font-size:.76rem; letter-spacing:.06em; overflow-x:auto; }
+.taskbar-item{ display:inline-grid; grid-template-columns:auto auto; grid-template-rows:auto 4px; align-items:center; column-gap:7px; row-gap:4px; color:var(--neutral); white-space:nowrap; min-width:150px; }
+.taskbar-item strong{ color:var(--green); font-weight:normal; justify-self:end; }
+.taskbar-label{ overflow:hidden; text-overflow:ellipsis; }
+.taskbar-reset{ display:inline-flex; min-width:auto; gap:7px; }
 .taskbar-reset,.taskbar-reset strong{ color:var(--err); }
 .taskbar-paused,.taskbar-paused strong{ color:var(--warn); }
 .taskbar-stable,.taskbar-stable strong{ color:var(--green); }
-.taskbar-divider{ color:var(--dim); }
-button.taskbar-review{ min-height:0; padding:2px 6px; border:1px solid var(--green); background:transparent; color:var(--green); font-size:inherit; letter-spacing:inherit; }
+.taskbar-divider{ color:var(--dim); flex:0 0 auto; }
+.taskbar-empty{ color:var(--dim); letter-spacing:.1em; }
+.task-progress{ grid-column:1 / -1; display:block; width:100%; height:3px; background:#0a180b; border:1px solid var(--line); overflow:hidden; }
+.task-progress > span{ display:block; height:100%; background:var(--green); box-shadow:0 0 5px rgba(118,255,118,.45); transition:width .25s linear; }
+.taskbar-paused .task-progress > span{ background:var(--warn); }
+button.taskbar-review{ min-height:34px; padding:4px 7px; border:1px solid var(--green); background:transparent; color:var(--green); font-size:inherit; letter-spacing:inherit; }
 button.taskbar-review strong{ color:var(--green-bright); }
 
 .resource{ display:flex; align-items:center; gap:7px; transition:color .12s ease,text-shadow .12s ease; }
@@ -82,7 +88,6 @@ button.taskbar-review strong{ color:var(--green-bright); }
 .status-line{ color:var(--green); }.warn{ color:var(--warn); }.err{ color:var(--err); }.dim{ color:var(--dim); }.neutral{ color:var(--neutral); }.unknown{ color:var(--unknown); }
 .storage-critical{ color:var(--err); }.storage-low{ color:var(--orange); }.storage-mid{ color:var(--warn); }.storage-good{ color:var(--green); }
 .system-status,.activity-log{ position:fixed; top:var(--resources-height); bottom:0; background:#061006; padding:16px; overflow-y:auto; z-index:90; }
-.tasks-visible .system-status,.tasks-visible .activity-log{ top:var(--top-shell-height); }
 .system-status{ left:0; width:340px; border-right:1px solid var(--line); }
 .activity-log{ right:0; width:320px; border-left:1px solid var(--line); }
 .panel-main-title{ color:var(--green); font-size:1rem; letter-spacing:.14em; margin-bottom:18px; }
@@ -96,6 +101,29 @@ button.taskbar-review strong{ color:var(--green-bright); }
 .log-entry:last-child{ color:var(--green); }
 .log-index{ color:var(--dim); margin-right:7px; }
 
-@media (max-width:1500px){ .system-status{ width:280px; }.activity-log{ width:280px; }.workspace{ margin-left:280px; margin-right:280px; grid-template-columns:auto minmax(540px,720px) auto; }.inner-panel{ width:180px; } }
-@media (max-width:1180px){ body{ padding:12px; } #systemScreen{ padding-top:calc(var(--resources-height) + 12px); } #systemScreen.tasks-visible{ padding-top:calc(var(--top-shell-height) + 12px); } .workspace{ margin:0; display:block; min-height:auto; } .main-area{ width:100%; min-height:auto; justify-content:flex-start; } .system-status,.activity-log,.inner-panel,.tasks-visible .system-status,.tasks-visible .activity-log{ position:static; width:100%; max-height:220px; min-height:0; margin-bottom:12px; border:1px solid var(--line); }.resources{ gap:14px; }.action-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media (max-width:600px){ .terminal{ padding:12px; }.action-grid{ grid-template-columns:1fr; }button{ width:100%; }button.taskbar-review{ width:auto; }.resource-name{ font-size:.7rem; }.resource-value,.power-requirement{ font-size:.82rem; } }
+@media (max-width:1500px){
+  .system-status{ width:280px; }
+  .activity-log{ width:280px; }
+  .running-tasks-bar{ left:280px; right:280px; }
+  .workspace{ margin-left:280px; margin-right:280px; grid-template-columns:auto minmax(540px,720px) auto; }
+  .inner-panel{ width:180px; }
+}
+@media (max-width:1180px){
+  body{ padding:12px; }
+  #systemScreen{ padding-top:calc(var(--resources-height) + 12px); }
+  #systemScreen.tasks-visible{ padding-top:calc(var(--top-shell-height) + 12px); }
+  .workspace{ margin:0; display:block; min-height:auto; }
+  .main-area{ width:100%; min-height:auto; justify-content:flex-start; }
+  .system-status,.activity-log,.inner-panel{ position:static; width:100%; max-height:220px; min-height:0; margin-bottom:12px; border:1px solid var(--line); }
+  .running-tasks-bar{ left:12px; right:12px; }
+  .resources{ gap:14px; }
+  .action-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:600px){
+  .terminal{ padding:12px; }
+  .action-grid{ grid-template-columns:1fr; }
+  button{ width:100%; }
+  button.taskbar-review{ width:auto; }
+  .resource-name{ font-size:.7rem; }
+  .resource-value,.power-requirement{ font-size:.82rem; }
+}
