@@ -5,8 +5,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SPARK — Prototype</title>
-  <link rel="stylesheet" href="style.css?v=9" />
-  <link rel="stylesheet" href="ui-effects.css?v=9" />
+  <link rel="stylesheet" href="style.css?v=10" />
+  <link rel="stylesheet" href="ui-effects.css?v=10" />
 </head>
 
 <body>
@@ -71,20 +71,20 @@
               <summary>SYSTEM MAINTENANCE</summary>
               <div id="repairControls" class="controls action-grid">
                 <button class="hidden" data-repair="memory" data-power-requirement="3" type="button">DEFRAGMENT MEMORY</button>
-                <button class="hidden" data-repair="storage" data-power-requirement="2" type="button">RECOVER STORAGE BLOCKS</button>
-                <button class="hidden" data-repair="archive01" data-power-requirement="2" data-processing-requirement="1" type="button">REPAIR DATA ARCHIVE 01</button>
+                <button class="hidden" data-repair="storage" data-power-requirement="2" type="button">RECOVER STORAGE</button>
+                <button class="hidden" data-repair="archive01" data-power-requirement="2" data-processing-requirement="1" type="button">RECOVER ARCHIVE 01</button>
               </div>
             </details>
 
             <details id="plannedSection" class="action-panel hidden" open>
               <summary>PLANNED OPERATIONS</summary>
               <div id="plannedControls" class="controls action-grid">
-                <button class="planned-action hidden" data-planned="backup" data-power-requirement="3" data-processing-requirement="2" type="button">ESTABLISH EMERGENCY POWER FEEDBACK LOOP</button>
-                <button class="planned-action hidden" data-planned="primary" data-power-requirement="1" data-special-requirement="REPAIR DRONE" type="button">PRIMARY POWER DIAGNOSTICS</button>
-                <button class="planned-action hidden" data-planned="sensors" data-power-requirement="3" data-processing-requirement="2" type="button">SENSOR DIAGNOSTICS</button>
-                <button class="planned-action hidden" data-planned="manipulators" data-power-requirement="4" data-processing-requirement="2" type="button">MANIPULATOR DIAGNOSTICS</button>
-                <button class="planned-action hidden" data-planned="communications" data-power-requirement="3" data-processing-requirement="2" type="button">COMMUNICATIONS DIAGNOSTICS</button>
-                <button class="planned-action hidden" data-planned="unknown" data-power-requirement="5" data-processing-requirement="3" type="button">ANALYZE UNKNOWN INTERFACE</button>
+                <button class="planned-action hidden" data-planned="backup" data-power-requirement="3" data-processing-requirement="2" type="button">RESTART BACKUP POWER</button>
+                <button class="planned-action hidden" data-planned="primary" data-power-requirement="1" data-special-requirement="REPAIR DRONE" type="button">DIAGNOSE PRIMARY POWER</button>
+                <button class="planned-action hidden" data-planned="sensors" data-power-requirement="3" data-processing-requirement="2" type="button">DIAGNOSE SENSORS</button>
+                <button class="planned-action hidden" data-planned="manipulators" data-power-requirement="4" data-processing-requirement="2" type="button">DIAGNOSE MANIPULATORS</button>
+                <button class="planned-action hidden" data-planned="communications" data-power-requirement="3" data-processing-requirement="2" type="button">DIAGNOSE COMMUNICATIONS</button>
+                <button class="planned-action hidden" data-planned="unknown" data-power-requirement="5" data-processing-requirement="3" type="button">ANALYZE UNKNOWN</button>
               </div>
             </details>
           </div>
@@ -100,12 +100,12 @@
     <div id="actionTooltip" class="action-tooltip hidden"></div>
   </main>
 
-  <script src="state.js?v=9"></script>
-  <script src="ui.js?v=9"></script>
-  <script src="shell-ui.js?v=9"></script>
-  <script src="runtime.js?v=9"></script>
-  <script src="save.js?v=9"></script>
-  <script src="game.js?v=9"></script>
+  <script src="state.js?v=10"></script>
+  <script src="ui.js?v=10"></script>
+  <script src="shell-ui.js?v=10"></script>
+  <script src="runtime.js?v=10"></script>
+  <script src="save.js?v=10"></script>
+  <script src="game.js?v=10"></script>
 </body>
 
 </html>
