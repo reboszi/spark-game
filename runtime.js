@@ -22,13 +22,17 @@ function resetSystemResetCountdown() {
 }
 
 function startRuntimeClock() {
-  if (runtimeClockTimer || !state.revealed.systemTime) return;
+  if (runtimeClockTimer) return;
 
   runtimeClockTimer = setInterval(() => {
-    state.systemTimeSeconds += 1;
+    if (state.revealed.systemTime) {
+      state.systemTimeSeconds += 1;
+    }
 
     if (!state.isShuttingDown && state.powerGeneration > 0) {
-      state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - 1);
+      if (state.revealed.systemTime) {
+        state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - 1);
+      }
       tickTasks();
     }
 
