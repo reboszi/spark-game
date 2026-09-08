@@ -73,7 +73,7 @@ function updateResources() {
 
 function getStatusClass(value) {
   if (["ERROR","CRITICAL","SEVERE","CORRUPTED","DAMAGED","BLOCKED"].includes(value)) return "err";
-  if (["PARTIAL","DEGRADED","DETECTED","RESTART REQUIRED"].includes(value)) return "warn";
+  if (["PARTIAL","DEGRADED","DETECTED","RESTART REQUIRED","STOPPED"].includes(value)) return "warn";
   if (["OFFLINE","UNAVAILABLE"].includes(value)) return "dim";
   if (value === "NO RESPONSE") return "neutral";
   if (value === "UNKNOWN") return "unknown";
