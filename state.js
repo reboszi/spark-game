@@ -16,15 +16,20 @@ const state = {
   processingPower: 1,
   processingPowerMax: 16,
 
+  systemTimeSeconds: 0,
+  resetCountdownSeconds: Math.round((GAME_CONFIG.generationStart * GAME_CONFIG.generationTickMs) / 1000),
+
   isBusy: false,
   isShuttingDown: false,
 
   progression: {
     hasBooted: false,
-    systemDiagnosticsComplete: false
+    systemDiagnosticsComplete: false,
+    firstResetSeen: false
   },
 
   logEntries: [],
+  runningTasks: [],
 
   capabilities: {
     repairDrone: false
@@ -56,6 +61,7 @@ const state = {
   },
 
   revealed: {
+    systemTime: false,
     powerGeneration: false,
     powerStorage: false,
     memory: false,
