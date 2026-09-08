@@ -122,7 +122,10 @@
   padding: 3px 0;
 }
 
-.tooltip-requirement.met { color: var(--green); }
+.tooltip-requirement.requirement-power.met { color: var(--resource-power-generation); }
+.tooltip-requirement.requirement-processing.met { color: var(--resource-processing); }
+.tooltip-requirement.requirement-memory.met { color: var(--resource-memory); }
+.tooltip-requirement.met:not(.requirement-power):not(.requirement-processing):not(.requirement-memory) { color: var(--green); }
 .tooltip-requirement.unmet { color: var(--err); }
 
 .tooltip-outcome {
