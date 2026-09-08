@@ -50,27 +50,6 @@ function resourceCard(icon, name, value, current, max, extraClass = "") {
   return `<div class="resource resource-bar ${extraClass}" style="--resource-fill:${percent}%"><span class="resource-icon">${icon}</span><span class="resource-name">${name}</span><span class="resource-value">${value}</span></div>`;
 }
 
-function updateResources() {
-  let html = "";
-  if (state.revealed.powerGeneration) {
-    const req = hoveredRequirements.power;
-    const active = req !== null;
-    const ok = !active || state.powerGeneration >= req;
-    html += resourceCard("⚡", "POWER GENERATION", `${state.powerGeneration} / ${state.powerGenerationMax}`, state.powerGeneration, state.powerGenerationMax, `resource-power-generation ${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
-  }
-  if (state.revealed.powerStorage) html += resourceCard("🔋", "POWER STORAGE", `${state.powerStorage} / ${state.powerStorageMax}`, state.powerStorage, state.powerStorageMax, "resource-power-storage");
-  if (state.revealed.memory) html += resourceCard("◫", "MEMORY", `${state.memory} / ${state.memoryMax}`, state.memory, state.memoryMax, "resource-memory");
-  if (state.revealed.processingPower) {
-    const req = hoveredRequirements.processing;
-    const active = req !== null;
-    const ok = !active || state.processingPower >= req;
-    html += resourceCard("◈", "PROCESSING POWER", `${state.processingPower} / ${state.processingPowerMax}`, state.processingPower, state.processingPowerMax, `resource-processing-power ${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
-  }
-  resourcesEl.innerHTML = html;
-  resourcesEl.classList.toggle("hidden", !html);
-  updateButtons();
-}
-
 function getStatusClass(value) {
   if (["ERROR","CRITICAL","SEVERE","CORRUPTED","DAMAGED","BLOCKED"].includes(value)) return "err";
   if (["PARTIAL","DEGRADED","DETECTED","RESTART REQUIRED","STOPPED"].includes(value)) return "warn";
@@ -110,14 +89,30 @@ function updateSystemStatus() {
 
 function addLogEntry(text) { state.logEntries.push(text); if (state.logEntries.length > 80) state.logEntries.shift(); renderActivityLog(); }
 function renderActivityLog() { logContentEl.innerHTML = state.logEntries.map((entry,index)=>`<div class="log-entry"><span class="log-index">${String(index+1).padStart(2,"0")}</span>${entry}</div>`).join(""); activityLogEl.classList.toggle("hidden",state.logEntries.length===0); activityLogEl.scrollTop = activityLogEl.scrollHeight; }
-function getAvailablePower() { return state.powerGeneration; }
+function getAvailablePower() { return getAvailableGeneration(); }
 function hasSpecialRequirement(button) { const r=button.dataset.specialRequirement; if (!r) return true; if (r === "REPAIR DRONE") return Boolean(state.capabilities.repairDrone); return false; }
-function buttonRequirementsMet(button) { return state.powerGeneration >= Number(button.dataset.powerRequirement||0) && state.processingPower >= Number(button.dataset.processingRequirement||0) && hasSpecialRequirement(button); }
-function updateButtons() { document.querySelectorAll("[data-power-requirement]").forEach(button=>{ const locked=!buttonRequirementsMet(button); button.classList.toggle("power-insufficient",state.powerGeneration < Number(button.dataset.powerRequirement||0)); button.classList.toggle("requirement-locked",locked); button.setAttribute("aria-disabled",String(state.isBusy||state.isShuttingDown||locked)); button.disabled=state.isBusy||state.isShuttingDown; }); }
+function getButtonTaskKey(button) { if (button === systemDiagnosticsButton) return "system:diagnostics"; if(button.dataset.diag) return `diag:${button.dataset.diag}`; if(button.dataset.repair) return `repair:${button.dataset.repair}`; if(button.dataset.planned) return `planned:${button.dataset.planned}`; return null; }
+function buttonRequirementsMet(button) { return getAvailableGeneration() >= Number(button.dataset.powerRequirement||0) && state.processingPower >= Number(button.dataset.processingRequirement||0) && hasSpecialRequirement(button); }
+function updateButtons() {
+  document.querySelectorAll(".controls button").forEach(button=>{
+    const taskKey = getButtonTaskKey(button);
+    const alreadyRunning = taskKey ? Boolean(taskByKey(taskKey)) : false;
+    const powerReq = Number(button.dataset.powerRequirement||0);
+    const locked = !buttonRequirementsMet(button);
+    button.classList.toggle("power-insufficient",getAvailableGeneration() < powerReq);
+    button.classList.toggle("requirement-locked",locked);
+    button.classList.toggle("task-active",alreadyRunning);
+    button.setAttribute("aria-disabled",String(state.isShuttingDown||locked||alreadyRunning));
+    button.disabled=state.isShuttingDown||alreadyRunning;
+  });
+  const systemTaskActive = Boolean(taskByKey("system:diagnostics"));
+  systemDiagnosticsButton.disabled = state.isShuttingDown || state.progression.systemDiagnosticsComplete || systemTaskActive;
+  systemDiagnosticsButton.classList.toggle("task-active", systemTaskActive);
+}
 function setAllActionButtonsDisabled(disabled) { state.isBusy=disabled; document.querySelectorAll(".controls button").forEach(button=>button.disabled=disabled); if(!disabled) updateButtons(); }
 function refreshDiagnosticButtons() { diagnosticControls.querySelectorAll("button[data-diag]").forEach(button=>button.classList.toggle("hidden",Boolean(state.diagnostics[button.dataset.diag]))); const any=[...diagnosticControls.querySelectorAll("button[data-diag]")].some(button=>!button.classList.contains("hidden")); diagnosticSection.classList.toggle("hidden",!state.progression.systemDiagnosticsComplete||!any); }
 function refreshActionUnlocks() { const memoryRepair=repairControls.querySelector('[data-repair="memory"]'); const storageRepair=repairControls.querySelector('[data-repair="storage"]'); const archiveRepair=repairControls.querySelector('[data-repair="archive01"]'); memoryRepair.classList.toggle("hidden",!state.diagnostics.memory||state.memory>=state.memoryMax); storageRepair.classList.toggle("hidden",!state.diagnostics.memory||state.status.storageRecovered>=100); archiveRepair.classList.toggle("hidden",!state.diagnostics.memory||state.actions.archive01Repaired); maintenanceSection.classList.toggle("hidden",![...repairControls.querySelectorAll("button")].some(button=>!button.classList.contains("hidden"))); const visibility={backup:state.diagnostics.power&&!state.actions.backupRestarted,primary:state.diagnostics.power&&!state.actions.primaryPowerRepaired,sensors:state.diagnostics.io,manipulators:state.diagnostics.io,communications:state.diagnostics.io,unknown:state.diagnostics.io}; plannedControls.querySelectorAll("button[data-planned]").forEach(button=>button.classList.toggle("hidden",!visibility[button.dataset.planned])); plannedSection.classList.toggle("hidden",![...plannedControls.querySelectorAll("button")].some(button=>!button.classList.contains("hidden"))); if(Object.values(state.diagnostics).every(Boolean)) state.statusRevealed.systemIntegrity=true; }
-function refreshInterfaceFromState() { updateResources(); updateSystemStatus(); renderActivityLog(); refreshDiagnosticButtons(); refreshActionUnlocks(); updateSystemStatus(); primaryControls.classList.toggle("hidden",state.progression.systemDiagnosticsComplete); systemDiagnosticsButton.disabled=state.progression.systemDiagnosticsComplete; }
+function refreshInterfaceFromState() { updateResources(); updateSystemStatus(); renderActivityLog(); refreshDiagnosticButtons(); refreshActionUnlocks(); updateSystemStatus(); primaryControls.classList.toggle("hidden",state.progression.systemDiagnosticsComplete); updateButtons(); }
 
 const actionDescriptions = {
   "diag:memory":"Inspect memory availability and recoverable storage structures.",
@@ -149,7 +144,7 @@ const actionOutcomes = {
   "planned:unknown":"UNKNOWN"
 };
 
-function getActionKey(button) { if(button.dataset.diag) return `diag:${button.dataset.diag}`; if(button.dataset.repair) return `repair:${button.dataset.repair}`; return `planned:${button.dataset.planned}`; }
+function getActionKey(button) { return getButtonTaskKey(button); }
 function requirementRow(label,required,met) {
   const resourceClass = label === "Power Generation" ? "requirement-power" : label === "Processing Power" ? "requirement-processing" : label === "Memory" ? "requirement-memory" : "";
   return `<div class="tooltip-requirement ${resourceClass} ${met?"met":"unmet"}"><span>${label}</span><span>${required}</span></div>`;
@@ -159,7 +154,7 @@ function showRequirements(button) {
   const processingReq=button.dataset.processingRequirement!==undefined ? Number(button.dataset.processingRequirement) : null;
   hoveredRequirements.power=powerReq||null; hoveredRequirements.processing=processingReq; updateResources();
   let reqHtml="";
-  if(powerReq) reqHtml += requirementRow("Power Generation",powerReq,state.powerGeneration>=powerReq);
+  if(powerReq) reqHtml += requirementRow("Power Generation",powerReq,getAvailableGeneration()>=powerReq);
   if(processingReq!==null) reqHtml += requirementRow("Processing Power",processingReq,state.processingPower>=processingReq);
   if(button.dataset.specialRequirement) reqHtml += `<div class="tooltip-requirement ${hasSpecialRequirement(button)?"met":"unmet"}"><span>${button.dataset.specialRequirement}</span><span>${hasSpecialRequirement(button)?"AVAILABLE":"REQUIRED"}</span></div>`;
   const key=getActionKey(button);
