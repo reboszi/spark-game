@@ -1,7 +1,9 @@
 const GAME_CONFIG = {
   generationStart: 8,
   generationTickMs: 12000,
-  standbyDurationMs: 3200
+  standbyDurationMs: 3200,
+  backupGeneration: 4,
+  hydrazineBurnIntervalSeconds: 60
 };
 
 const state = {
@@ -25,14 +27,30 @@ const state = {
   progression: {
     hasBooted: false,
     systemDiagnosticsComplete: false,
-    firstResetSeen: false
+    firstResetSeen: false,
+    navigationUnlocked: false,
+    controlPanelUnlocked: false,
+    secondaryResourcesUnlocked: false,
+    processorArrayKnown: false
   },
 
   logEntries: [],
+  timelineEntries: [],
   runningTasks: [],
 
   capabilities: {
     repairDrone: false
+  },
+
+  controls: {
+    backupGeneratorOn: false,
+    backupGeneratorUnlocked: false
+  },
+
+  secondaryResources: {
+    hydrazineKnown: false,
+    hydrazineReserveHidden: 100,
+    hydrazineBurnSeconds: 0
   },
 
   status: {
@@ -93,6 +111,7 @@ const state = {
 
   actions: {
     archive01Repaired: false,
+    processorCore02Online: false,
     backupRestarted: false,
     primaryPowerRepaired: false
   }
