@@ -16,9 +16,10 @@ function updateResources() {
 
   if (state.revealed.powerGeneration) {
     const req = hoveredRequirements.power;
+    const available = getAvailableGeneration();
     const active = req !== null;
-    const ok = !active || state.powerGeneration >= req;
-    html += resourceCard("⚡", "POWER GENERATION", `${state.powerGeneration} / ${state.powerGenerationMax}`, state.powerGeneration, state.powerGenerationMax, `resource-power-generation ${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
+    const ok = !active || available >= req;
+    html += resourceCard("⚡", "POWER GENERATION", `${available} / ${state.powerGeneration}`, available, Math.max(1, state.powerGeneration), `resource-power-generation ${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
   }
 
   if (state.revealed.powerStorage) {
@@ -46,17 +47,26 @@ function updateTaskBar() {
 
   if (state.progression.firstResetSeen) {
     items.push(`<div class="taskbar-item taskbar-reset"><span>SYSTEM RESET</span><strong>${formatCountdown(state.resetCountdownSeconds)}</strong></div>`);
-  }
 
-  for (const task of state.runningTasks || []) {
-    const statusClass = task.status === "PAUSED" ? " taskbar-paused" : "";
-    const timeText = task.status === "PAUSED" ? "PAUSED" : formatCountdown(task.remainingSeconds);
-    items.push(`<div class="taskbar-item${statusClass}"><span>${task.label}</span><strong>${timeText}</strong></div>`);
+    for (const task of state.runningTasks || []) {
+      if (task.status === "REVIEW") {
+        items.push(`<button class="taskbar-item taskbar-review" type="button" data-review-task="${task.id}"><span>${task.label}</span><strong>REVIEW</strong></button>`);
+        continue;
+      }
+      const statusClass = task.status === "PAUSED" ? " taskbar-paused" : "";
+      const timeText = task.status === "PAUSED" ? "PAUSED" : formatCountdown(task.remainingSeconds);
+      items.push(`<div class="taskbar-item${statusClass}"><span>${task.label}</span><strong>${timeText}</strong></div>`);
+    }
   }
 
   runningTasksBar.innerHTML = items.join('<span class="taskbar-divider">|</span>');
   runningTasksBar.classList.toggle("hidden", items.length === 0);
 }
+
+runningTasksBar.addEventListener("click", event => {
+  const reviewButton = event.target.closest("[data-review-task]");
+  if (reviewButton) reviewTask(reviewButton.dataset.reviewTask);
+});
 
 function refreshShellPanels() {
   updateTaskBar();
