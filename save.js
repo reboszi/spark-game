@@ -21,6 +21,12 @@ function mergeState(target, source) {
   }
 }
 
+function migrateSavedScreenHtml(html) {
+  return (html || "")
+    .replace("Required interface ........... REPAIR DRONE", "Required ..................... REPAIR DRONE")
+    .replace("Source identification .......... UNKNOWN", "Source ........................ UNKNOWN");
+}
+
 function saveGame() {
   if (!state.progression.hasBooted) return;
 
@@ -47,7 +53,15 @@ function loadSaveGame() {
     mergeState(state, payload.state);
     state.isBusy = false;
     state.isShuttingDown = false;
-    terminal.innerHTML = payload.mainScreenHtml || "";
+
+    const migratedHtml = migrateSavedScreenHtml(payload.mainScreenHtml);
+    terminal.innerHTML = migratedHtml;
+
+    if (migratedHtml !== (payload.mainScreenHtml || "")) {
+      payload.mainScreenHtml = migratedHtml;
+      localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+    }
+
     return true;
   } catch (error) {
     console.error("Could not load save game:", error);
