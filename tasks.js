@@ -46,6 +46,7 @@ function startTask(key) {
   };
 
   state.runningTasks.push(task);
+  startRuntimeClock();
   addLogEntry(`Started ${definition.label.toLowerCase()}.`);
   updateResources();
   updateTaskBar();
