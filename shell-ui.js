@@ -25,10 +25,10 @@ function updateResources() {
   if (state.revealed.powerGeneration) {
     const req = hoveredRequirements.power;
     const available = getAvailableGeneration();
-    const total = getTotalGeneration();
     const active = req !== null;
     const ok = !active || available >= req;
-    html += resourceCard("⚡", "POWER GENERATION", `${available} / ${total}`, available, Math.max(1, total), `resource-power-generation ${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
+    const displayScale = Math.max(1, GAME_CONFIG.generationStart + GAME_CONFIG.backupGeneration);
+    html += resourceCard("⚡", "POWER GENERATION", `${available}`, available, displayScale, `resource-power-generation ${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
   }
 
   if (state.revealed.powerStorage) html += resourceCard("🔋", "POWER STORAGE", `${state.powerStorage} / ${state.powerStorageMax}`, state.powerStorage, state.powerStorageMax, "resource-power-storage");
@@ -43,34 +43,47 @@ function updateResources() {
 
   resourcesEl.innerHTML = html;
   resourcesEl.classList.toggle("hidden", !html);
+  systemScreen.classList.toggle("resources-visible", Boolean(html));
   updateButtons();
 }
 
+function taskProgress(task) {
+  const duration = Math.max(1, Number(task.durationSeconds || TASK_DEFINITIONS[task.key]?.duration || task.remainingSeconds || 1));
+  const remaining = Math.max(0, Number(task.remainingSeconds || 0));
+  return Math.max(0, Math.min(100, ((duration - remaining) / duration) * 100));
+}
+
+function taskItemHtml(task) {
+  if (task.status === "REVIEW") {
+    return `<button class="taskbar-item taskbar-review" type="button" data-review-task="${task.id}"><span class="taskbar-label">${task.label}</span><strong>REVIEW</strong><span class="task-progress"><span style="width:100%"></span></span></button>`;
+  }
+
+  const statusClass = task.status === "PAUSED" ? " taskbar-paused" : "";
+  const timeText = task.status === "PAUSED" ? "PAUSED" : formatCountdown(task.remainingSeconds);
+  return `<div class="taskbar-item taskbar-task${statusClass}"><span class="taskbar-label">${task.label}</span><strong>${timeText}</strong><span class="task-progress"><span style="width:${taskProgress(task)}%"></span></span></div>`;
+}
+
 function updateTaskBar() {
+  const unlocked = Boolean(state.progression.taskbarUnlocked);
   const items = [];
 
   if (state.progression.firstResetSeen) {
     if (state.controls.backupGeneratorOn) {
-      items.push(`<div class="taskbar-item taskbar-stable"><span>SYSTEM RESET</span><strong>PREVENTED</strong></div>`);
+      items.push(`<div class="taskbar-item taskbar-reset taskbar-stable"><span>SYSTEM RESET</span><strong>PREVENTED</strong></div>`);
     } else {
       items.push(`<div class="taskbar-item taskbar-reset"><span>SYSTEM RESET</span><strong>${formatCountdown(state.resetCountdownSeconds)}</strong></div>`);
     }
   }
 
-  for (const task of state.runningTasks || []) {
-    if (task.status === "REVIEW") {
-      items.push(`<button class="taskbar-item taskbar-review" type="button" data-review-task="${task.id}"><span>${task.label}</span><strong>REVIEW</strong></button>`);
-      continue;
-    }
-    const statusClass = task.status === "PAUSED" ? " taskbar-paused" : "";
-    const timeText = task.status === "PAUSED" ? "PAUSED" : formatCountdown(task.remainingSeconds);
-    items.push(`<div class="taskbar-item${statusClass}"><span>${task.label}</span><strong>${timeText}</strong></div>`);
+  for (const task of state.runningTasks || []) items.push(taskItemHtml(task));
+
+  if (unlocked && items.length === 0) {
+    items.push(`<div class="taskbar-empty">NO RUNNING TASKS</div>`);
   }
 
   runningTasksBar.innerHTML = items.join('<span class="taskbar-divider">|</span>');
-  const visible = items.length > 0;
-  runningTasksBar.classList.toggle("hidden", !visible);
-  systemScreen.classList.toggle("tasks-visible", visible);
+  runningTasksBar.classList.toggle("hidden", !unlocked);
+  systemScreen.classList.toggle("tasks-visible", unlocked);
 }
 
 function renderNavigation() {
