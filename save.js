@@ -36,7 +36,7 @@ function saveGame() {
   savedState.isShuttingDown = false;
 
   const payload = {
-    version: 3,
+    version: 4,
     savedAt: Date.now(),
     state: savedState,
     mainScreenHtml: terminal.innerHTML
@@ -65,6 +65,18 @@ function loadSaveGame() {
     if (state.progression.systemDiagnosticsComplete && !state.revealed.systemTime) {
       state.revealed.systemTime = true;
       migrated = true;
+    }
+
+    if ((state.progression.systemDiagnosticsComplete || state.runningTasks.length) && !state.progression.taskbarUnlocked) {
+      state.progression.taskbarUnlocked = true;
+      migrated = true;
+    }
+
+    for (const task of state.runningTasks || []) {
+      if (!task.durationSeconds) {
+        task.durationSeconds = TASK_DEFINITIONS[task.key]?.duration || Math.max(1, Number(task.remainingSeconds || 1));
+        migrated = true;
+      }
     }
 
     if (state.progression.systemDiagnosticsComplete && !state.timelineEntries.length) {
@@ -104,7 +116,7 @@ function loadSaveGame() {
     }
 
     if (migrated) {
-      payload.version = 3;
+      payload.version = 4;
       payload.state = JSON.parse(JSON.stringify(state));
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     }
