@@ -28,6 +28,7 @@ const state = {
     hasBooted: false,
     systemDiagnosticsComplete: false,
     firstResetSeen: false,
+    taskbarUnlocked: false,
     navigationUnlocked: false,
     controlPanelUnlocked: false,
     secondaryResourcesUnlocked: false,
