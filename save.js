@@ -24,7 +24,8 @@ function mergeState(target, source) {
 function migrateSavedScreenHtml(html) {
   return (html || "")
     .replace("Required interface ........... REPAIR DRONE", "Required ..................... REPAIR DRONE")
-    .replace("Source identification .......... UNKNOWN", "Source ........................ UNKNOWN");
+    .replace("Source identification .......... UNKNOWN", "Source ......................... UNKNOWN")
+    .replace("Source ........................ UNKNOWN", "Source ......................... UNKNOWN");
 }
 
 function saveGame() {
