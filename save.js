@@ -47,7 +47,6 @@ function loadSaveGame() {
     mergeState(state, payload.state);
     state.isBusy = false;
     state.isShuttingDown = false;
-
     terminal.innerHTML = payload.mainScreenHtml || "";
     return true;
   } catch (error) {
@@ -62,7 +61,6 @@ function deleteSaveGame() {
 
 function configureStartMenu() {
   const saveExists = hasSaveGame();
-
   bootButton.classList.toggle("hidden", saveExists);
   continueButton.classList.toggle("hidden", !saveExists);
   newGameButton.classList.toggle("hidden", !saveExists);
@@ -91,5 +89,5 @@ function restoreSavedGame() {
 
 function startNewGame() {
   deleteSaveGame();
-  bootSequence();
+  window.location.reload();
 }
