@@ -6,11 +6,21 @@ const TASK_DEFINITIONS = {
   "repair:memory": { label: "DEFRAGMENT MEMORY", duration: 5, power: 3, review: false },
   "repair:storage": { label: "RECOVER STORAGE", duration: 6, power: 2, review: false },
   "repair:archive01": { label: "RECOVER ARCHIVE 01", duration: 8, power: 2, review: true },
+  "planned:processor": { label: "REINITIALIZE PROCESSOR CORE", duration: 8, power: 2, review: true },
   "planned:backup": { label: "RESTART BACKUP POWER", duration: 10, power: 3, review: true }
 };
 
 function taskByKey(key) {
   return (state.runningTasks || []).find(task => task.key === key);
+}
+
+function getBackupGeneration() {
+  const hasFuel = Number(state.secondaryResources?.hydrazineReserveHidden || 0) > 0;
+  return state.controls?.backupGeneratorOn && hasFuel ? GAME_CONFIG.backupGeneration : 0;
+}
+
+function getTotalGeneration() {
+  return state.powerGeneration + getBackupGeneration();
 }
 
 function getReservedPower() {
@@ -20,14 +30,14 @@ function getReservedPower() {
 }
 
 function getAvailableGeneration() {
-  return Math.max(0, state.powerGeneration - getReservedPower());
+  return Math.max(0, getTotalGeneration() - getReservedPower());
 }
 
 function canReservePower(amount, excludeTaskId = null) {
   const reserved = (state.runningTasks || [])
     .filter(task => task.status === "RUNNING" && task.id !== excludeTaskId)
     .reduce((sum, task) => sum + Number(task.power || 0), 0);
-  return state.powerGeneration - reserved >= Number(amount || 0);
+  return getTotalGeneration() - reserved >= Number(amount || 0);
 }
 
 function startTask(key) {
@@ -58,8 +68,9 @@ function startTask(key) {
 function pauseTasksForPower() {
   const running = (state.runningTasks || []).filter(task => task.status === "RUNNING");
   let reserved = running.reduce((sum, task) => sum + Number(task.power || 0), 0);
+  const generation = getTotalGeneration();
 
-  for (let i = running.length - 1; i >= 0 && reserved > state.powerGeneration; i--) {
+  for (let i = running.length - 1; i >= 0 && reserved > generation; i--) {
     const task = running[i];
     task.status = "PAUSED";
     reserved -= Number(task.power || 0);
