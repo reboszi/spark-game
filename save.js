@@ -23,9 +23,9 @@ function mergeState(target, source) {
 
 function migrateSavedScreenHtml(html) {
   return (html || "")
-    .replace("Required interface ........... REPAIR DRONE", "Required ..................... REPAIR DRONE")
-    .replace("Source identification .......... UNKNOWN", "Source ......................... UNKNOWN")
-    .replace("Source ........................ UNKNOWN", "Source ......................... UNKNOWN");
+    .replace(/Required interface\s*\.*\s*REPAIR DRONE/g, "Required ..................... REPAIR DRONE")
+    .replace(/Source identification\s*\.*\s*UNKNOWN/g, "Source ......................... UNKNOWN")
+    .replace(/Source\s*\.*\s*UNKNOWN/g, "Source ......................... UNKNOWN");
 }
 
 function saveGame() {
@@ -55,11 +55,24 @@ function loadSaveGame() {
     state.isBusy = false;
     state.isShuttingDown = false;
 
-    const migratedHtml = migrateSavedScreenHtml(payload.mainScreenHtml);
+    let migrated = false;
+
+    if (state.status.backupPower === "RESTART REQUIRED") {
+      state.status.backupPower = "STOPPED";
+      if (payload.state?.status) payload.state.status.backupPower = "STOPPED";
+      migrated = true;
+    }
+
+    const originalHtml = payload.mainScreenHtml || "";
+    const migratedHtml = migrateSavedScreenHtml(originalHtml);
     terminal.innerHTML = migratedHtml;
 
-    if (migratedHtml !== (payload.mainScreenHtml || "")) {
+    if (migratedHtml !== originalHtml) {
       payload.mainScreenHtml = migratedHtml;
+      migrated = true;
+    }
+
+    if (migrated) {
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     }
 
