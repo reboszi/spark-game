@@ -1,10 +1,30 @@
+:root {
+  --resource-power-generation: #43c7ff;
+  --resource-power-storage: #5b6dff;
+  --resource-memory: #b56cff;
+  --resource-processing: #e8f0f2;
+}
+
+.resource-power-generation { color: var(--resource-power-generation); }
+.resource-power-storage { color: var(--resource-power-storage); }
+.resource-memory { color: var(--resource-memory); }
+.resource-processing-power { color: var(--resource-processing); }
+
+.resource-power-generation .resource-name,
+.resource-power-storage .resource-name,
+.resource-memory .resource-name,
+.resource-processing-power .resource-name {
+  color: currentColor;
+  opacity: .72;
+}
+
 .resource.requirement-active {
-  color: var(--green-bright);
-  text-shadow: 0 0 9px rgba(118, 255, 118, .38);
+  text-shadow: 0 0 10px currentColor;
 }
 
 .resource.requirement-active .resource-name {
-  color: var(--green);
+  color: currentColor;
+  opacity: 1;
 }
 
 .resource.requirement-insufficient {
@@ -14,6 +34,7 @@
 
 .resource.requirement-insufficient .resource-name {
   color: var(--err);
+  opacity: 1;
 }
 
 .resource-bar {
@@ -31,12 +52,14 @@
   height: 3px;
   width: var(--resource-fill, 0%);
   background: currentColor;
-  opacity: .7;
-  transition: width .25s ease, opacity .15s ease;
+  opacity: .72;
+  box-shadow: 0 0 5px currentColor;
+  transition: width .25s ease, opacity .15s ease, box-shadow .15s ease;
 }
 
 .resource-bar.requirement-active::after {
   opacity: 1;
+  box-shadow: 0 0 9px currentColor;
 }
 
 .action-tooltip {
