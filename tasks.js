@@ -14,13 +14,8 @@ function taskByKey(key) {
   return (state.runningTasks || []).find(task => task.key === key);
 }
 
-function getBackupGeneration() {
-  const hasFuel = Number(state.secondaryResources?.hydrazineReserveHidden || 0) > 0;
-  return state.controls?.backupGeneratorOn && hasFuel ? GAME_CONFIG.backupGeneration : 0;
-}
-
 function getTotalGeneration() {
-  return state.powerGeneration + getBackupGeneration();
+  return Math.max(0, Number(state.powerGeneration || 0)) + (state.controls?.backupGeneratorOn ? GAME_CONFIG.backupGeneration : 0);
 }
 
 function getReservedPower() {
@@ -68,9 +63,9 @@ function startTask(key) {
 function pauseTasksForPower() {
   const running = (state.runningTasks || []).filter(task => task.status === "RUNNING");
   let reserved = running.reduce((sum, task) => sum + Number(task.power || 0), 0);
-  const generation = getTotalGeneration();
+  const totalGeneration = getTotalGeneration();
 
-  for (let i = running.length - 1; i >= 0 && reserved > generation; i--) {
+  for (let i = running.length - 1; i >= 0 && reserved > totalGeneration; i--) {
     const task = running[i];
     task.status = "PAUSED";
     reserved -= Number(task.power || 0);
@@ -134,5 +129,9 @@ function tickTasks() {
   }
 
   for (const task of completed) finishTask(task);
-  if (!completed.length) updateTaskBar();
+  if (!completed.length) {
+    updateResources();
+    updateTaskBar();
+    updateButtons();
+  }
 }
