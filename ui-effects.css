@@ -5,16 +5,30 @@
   --resource-processing: #e8f0f2;
 }
 
-.resource-power-generation { color: var(--resource-power-generation); }
-.resource-power-storage { color: var(--resource-power-storage); }
-.resource-memory { color: var(--resource-memory); }
-.resource-processing-power { color: var(--resource-processing); }
+.resource.resource-power-generation { color: var(--resource-power-generation); }
+.resource.resource-power-storage { color: var(--resource-power-storage); }
+.resource.resource-memory { color: var(--resource-memory); }
+.resource.resource-processing-power { color: var(--resource-processing); }
 
-.resource-power-generation .resource-name,
-.resource-power-storage .resource-name,
-.resource-memory .resource-name,
-.resource-processing-power .resource-name {
+.resource.resource-power-generation .resource-name,
+.resource.resource-power-storage .resource-name,
+.resource.resource-memory .resource-name,
+.resource.resource-processing-power .resource-name,
+.resource.resource-power-generation .resource-value,
+.resource.resource-power-storage .resource-value,
+.resource.resource-memory .resource-value,
+.resource.resource-processing-power .resource-value,
+.resource.resource-power-generation .resource-icon,
+.resource.resource-power-storage .resource-icon,
+.resource.resource-memory .resource-icon,
+.resource.resource-processing-power .resource-icon {
   color: currentColor;
+}
+
+.resource.resource-power-generation .resource-name,
+.resource.resource-power-storage .resource-name,
+.resource.resource-memory .resource-name,
+.resource.resource-processing-power .resource-name {
   opacity: .72;
 }
 
@@ -28,12 +42,14 @@
 }
 
 .resource.requirement-insufficient {
-  color: var(--err);
+  color: var(--err) !important;
   text-shadow: 0 0 9px rgba(255, 107, 107, .32);
 }
 
-.resource.requirement-insufficient .resource-name {
-  color: var(--err);
+.resource.requirement-insufficient .resource-name,
+.resource.requirement-insufficient .resource-value,
+.resource.requirement-insufficient .resource-icon {
+  color: var(--err) !important;
   opacity: 1;
 }
 
