@@ -1,0 +1,93 @@
+.resource.requirement-active {
+  color: var(--green-bright);
+  text-shadow: 0 0 9px rgba(118, 255, 118, .38);
+}
+
+.resource.requirement-active .resource-name {
+  color: var(--green);
+}
+
+.resource.requirement-insufficient {
+  color: var(--err);
+  text-shadow: 0 0 9px rgba(255, 107, 107, .32);
+}
+
+.resource.requirement-insufficient .resource-name {
+  color: var(--err);
+}
+
+.action-tooltip {
+  position: fixed;
+  z-index: 1000;
+  width: 300px;
+  padding: 12px 14px;
+  border: 1px solid var(--dim);
+  background: #030703;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .55), inset 0 0 24px rgba(80, 255, 80, .025);
+  pointer-events: none;
+  font-size: .8rem;
+}
+
+.tooltip-title {
+  color: var(--green-bright);
+  letter-spacing: .08em;
+  margin-bottom: 8px;
+}
+
+.tooltip-description {
+  color: var(--neutral);
+  line-height: 1.35;
+  margin-bottom: 12px;
+}
+
+.tooltip-section-title {
+  color: var(--dim);
+  font-size: .7rem;
+  letter-spacing: .12em;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+  margin-bottom: 5px;
+}
+
+.tooltip-requirement {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.tooltip-requirement.met { color: var(--green); }
+.tooltip-requirement.unmet { color: var(--err); }
+
+button[data-special-requirement]::after {
+  content: none;
+}
+
+#systemScreen.screen-wake {
+  animation: system-wake .8s steps(2, end);
+}
+
+#systemScreen.screen-restored {
+  animation: screen-restored .8s ease-out;
+}
+
+@keyframes system-wake {
+  0% { opacity: 0; filter: brightness(2.4); transform: scaleY(.02); }
+  18% { opacity: 1; filter: brightness(1.8); transform: scaleY(.06); }
+  36% { opacity: .3; filter: brightness(.7); transform: scaleY(.65); }
+  52% { opacity: 1; filter: brightness(1.35); transform: scaleY(1); }
+  68% { opacity: .65; }
+  100% { opacity: 1; filter: brightness(1); transform: scaleY(1); }
+}
+
+@keyframes screen-restored {
+  0% { filter: brightness(1.8); opacity: .45; }
+  35% { filter: brightness(.75); opacity: .8; }
+  100% { filter: brightness(1); opacity: 1; }
+}
+
+@media (max-width: 600px) {
+  .action-tooltip {
+    width: min(280px, calc(100vw - 24px));
+  }
+}
