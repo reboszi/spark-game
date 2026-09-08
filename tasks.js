@@ -44,12 +44,14 @@ function startTask(key) {
     id: `${key}:${Date.now()}:${Math.random().toString(36).slice(2, 7)}`,
     key,
     label: definition.label,
+    durationSeconds: definition.duration,
     remainingSeconds: definition.duration,
     power: definition.power,
     status: "RUNNING",
     review: Boolean(definition.review)
   };
 
+  state.progression.taskbarUnlocked = true;
   state.runningTasks.push(task);
   startRuntimeClock();
   addLogEntry(`Started ${definition.label.toLowerCase()}.`);
