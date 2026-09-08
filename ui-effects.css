@@ -16,6 +16,29 @@
   color: var(--err);
 }
 
+.resource-bar {
+  position: relative;
+  padding: 5px 7px 7px;
+  border-bottom: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.resource-bar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: var(--resource-fill, 0%);
+  background: currentColor;
+  opacity: .7;
+  transition: width .25s ease, opacity .15s ease;
+}
+
+.resource-bar.requirement-active::after {
+  opacity: 1;
+}
+
 .action-tooltip {
   position: fixed;
   z-index: 1000;
@@ -49,6 +72,10 @@
   margin-bottom: 5px;
 }
 
+.tooltip-outcome-title {
+  margin-top: 12px;
+}
+
 .tooltip-requirement {
   display: flex;
   justify-content: space-between;
@@ -58,6 +85,12 @@
 
 .tooltip-requirement.met { color: var(--green); }
 .tooltip-requirement.unmet { color: var(--err); }
+
+.tooltip-outcome {
+  color: var(--unknown);
+  line-height: 1.35;
+  padding-top: 2px;
+}
 
 button[data-special-requirement]::after {
   content: none;
