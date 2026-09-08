@@ -150,7 +150,10 @@ const actionOutcomes = {
 };
 
 function getActionKey(button) { if(button.dataset.diag) return `diag:${button.dataset.diag}`; if(button.dataset.repair) return `repair:${button.dataset.repair}`; return `planned:${button.dataset.planned}`; }
-function requirementRow(label,required,met) { return `<div class="tooltip-requirement ${met?"met":"unmet"}"><span>${label}</span><span>${required}</span></div>`; }
+function requirementRow(label,required,met) {
+  const resourceClass = label === "Power Generation" ? "requirement-power" : label === "Processing Power" ? "requirement-processing" : label === "Memory" ? "requirement-memory" : "";
+  return `<div class="tooltip-requirement ${resourceClass} ${met?"met":"unmet"}"><span>${label}</span><span>${required}</span></div>`;
+}
 function showRequirements(button) {
   const powerReq=Number(button.dataset.powerRequirement||0);
   const processingReq=button.dataset.processingRequirement!==undefined ? Number(button.dataset.processingRequirement) : null;
