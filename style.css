@@ -1,5 +1,7 @@
 :root {
-  --resources-height: 40px;
+  --resources-height: 48px;
+  --taskbar-height: 32px;
+  --top-shell-height: calc(var(--resources-height) + var(--taskbar-height));
   --bg: #050805;
   --panel: #071007;
   --green: #76ff76;
@@ -46,9 +48,9 @@ button {
   color: var(--green);
   background: #071007;
   border: 1px solid var(--dim);
-  padding: 10px 14px;
+  padding: 9px 12px;
   cursor: pointer;
-  min-height: 44px;
+  min-height: 42px;
 }
 
 button:hover:not(:disabled),
@@ -119,18 +121,60 @@ button[data-special-requirement]::after {
 @keyframes standby-blink { 50% { opacity: .12; } }
 
 #systemScreen {
-  min-height: calc(100vh - var(--resources-height));
-  padding-top: var(--resources-height);
+  min-height: calc(100vh - var(--top-shell-height));
+  padding-top: var(--top-shell-height);
 }
 
-.main-area {
-  width: min(760px, calc(100% - 48px));
-  min-height: calc(100vh - var(--resources-height));
-  margin: 0 auto;
+.workspace {
+  min-height: calc(100vh - var(--top-shell-height));
+  margin-left: 340px;
+  margin-right: 320px;
+  display: grid;
+  grid-template-columns: auto minmax(560px, 820px) auto;
+  justify-content: center;
+  gap: 14px;
+}
+
+.center-workspace {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
+
+.main-area {
+  width: 100%;
+  min-height: calc(100vh - var(--top-shell-height));
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.navigation-panel {
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  background: rgba(7, 16, 7, .8);
+}
+
+.inner-panel {
+  width: 210px;
+  min-height: 260px;
+  align-self: center;
+  border: 1px solid var(--line);
+  background: #061006;
+  padding: 14px;
+}
+
+.control-panel { grid-column: 1; }
+.center-workspace { grid-column: 2; }
+.secondary-resources-panel { grid-column: 3; }
 
 .terminal {
   border: 1px solid var(--dim);
@@ -153,10 +197,10 @@ button[data-special-requirement]::after {
   margin-top: 12px;
 }
 
-.primary-controls button { min-width: 250px; }
+.primary-controls button { min-width: 230px; }
 
 .action-panel {
-  margin-top: 16px;
+  margin-top: 14px;
   border: 1px solid var(--line);
   background: rgba(7, 16, 7, .7);
 }
@@ -166,7 +210,7 @@ button[data-special-requirement]::after {
   color: var(--dim);
   letter-spacing: .12em;
   font-size: .8rem;
-  padding: 10px 12px;
+  padding: 9px 11px;
   user-select: none;
 }
 
@@ -176,15 +220,15 @@ button[data-special-requirement]::after {
 
 .action-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  padding: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  padding: 10px;
   margin-top: 0;
 }
 
 .action-grid button {
   width: 100%;
-  min-height: 52px;
+  min-height: 46px;
 }
 
 .resources {
@@ -197,12 +241,43 @@ button[data-special-requirement]::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 28px;
-  padding: 8px 16px;
+  gap: 22px;
+  padding: 6px 16px;
   border-bottom: 1px solid var(--line);
   background: #061006;
   flex-wrap: wrap;
 }
+
+.running-tasks-bar {
+  position: fixed;
+  top: var(--resources-height);
+  left: 0;
+  right: 0;
+  min-height: var(--taskbar-height);
+  z-index: 99;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 5px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #040a04;
+  font-size: .76rem;
+  letter-spacing: .06em;
+}
+
+.taskbar-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--neutral);
+  white-space: nowrap;
+}
+
+.taskbar-item strong { color: var(--green); font-weight: normal; }
+.taskbar-reset, .taskbar-reset strong { color: var(--err); }
+.taskbar-paused, .taskbar-paused strong { color: var(--warn); }
+.taskbar-divider { color: var(--dim); }
 
 .resource {
   display: flex;
@@ -218,6 +293,15 @@ button[data-special-requirement]::after {
 }
 
 .resource-value { font-size: .95rem; }
+
+.system-time-resource {
+  color: var(--neutral);
+  padding: 5px 7px;
+  border-bottom: 1px solid var(--line);
+}
+
+.system-time-resource .resource-name { color: var(--neutral); opacity: .72; }
+.system-time-resource .resource-value { color: var(--green-bright); }
 
 .power-resource.requirement-active {
   color: var(--green-bright);
@@ -253,7 +337,7 @@ button[data-special-requirement]::after {
 .system-status,
 .activity-log {
   position: fixed;
-  top: var(--resources-height);
+  top: var(--top-shell-height);
   bottom: 0;
   background: #061006;
   padding: 16px;
@@ -327,25 +411,35 @@ button[data-special-requirement]::after {
 .log-entry:last-child { color: var(--green); }
 .log-index { color: var(--dim); margin-right: 7px; }
 
-@media (max-width: 1250px) {
-  .system-status { width: 260px; }
-  .activity-log { width: 260px; }
-  .main-area { width: min(660px, calc(100% - 32px)); }
+@media (max-width: 1500px) {
+  .system-status { width: 280px; }
+  .activity-log { width: 280px; }
+  .workspace { margin-left: 280px; margin-right: 280px; grid-template-columns: auto minmax(540px, 720px) auto; }
+  .inner-panel { width: 180px; }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1180px) {
   body { padding: 12px; }
-  #systemScreen { padding-top: 60px; }
+  #systemScreen { padding-top: calc(var(--top-shell-height) + 12px); }
+  .workspace {
+    margin: 0;
+    display: block;
+    min-height: auto;
+  }
   .main-area { width: 100%; min-height: auto; justify-content: flex-start; }
   .system-status,
-  .activity-log {
+  .activity-log,
+  .inner-panel {
     position: static;
     width: 100%;
     max-height: 220px;
+    min-height: 0;
     margin-bottom: 12px;
     border: 1px solid var(--line);
   }
   .resources { justify-content: flex-start; gap: 14px; }
+  .running-tasks-bar { justify-content: flex-start; overflow-x: auto; }
+  .action-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 600px) {
