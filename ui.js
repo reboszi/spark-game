@@ -44,8 +44,10 @@ async function progressLine(label, values, finalText = "ONLINE") {
 }
 
 function clearMainScreen() { terminal.innerHTML = ""; }
-function resourceCard(icon, name, value, extraClass = "") {
-  return `<div class="resource ${extraClass}"><span class="resource-icon">${icon}</span><span class="resource-name">${name}</span><span class="resource-value">${value}</span></div>`;
+
+function resourceCard(icon, name, value, current, max, extraClass = "") {
+  const percent = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
+  return `<div class="resource resource-bar ${extraClass}" style="--resource-fill:${percent}%"><span class="resource-icon">${icon}</span><span class="resource-name">${name}</span><span class="resource-value">${value}</span></div>`;
 }
 
 function updateResources() {
@@ -54,15 +56,15 @@ function updateResources() {
     const req = hoveredRequirements.power;
     const active = req !== null;
     const ok = !active || state.powerGeneration >= req;
-    html += resourceCard("⚡", "POWER GENERATION", `${state.powerGeneration} / ${state.powerGenerationMax}`, `${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
+    html += resourceCard("⚡", "POWER GENERATION", `${state.powerGeneration} / ${state.powerGenerationMax}`, state.powerGeneration, state.powerGenerationMax, `${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
   }
-  if (state.revealed.powerStorage) html += resourceCard("🔋", "POWER STORAGE", `${state.powerStorage} / ${state.powerStorageMax}`);
-  if (state.revealed.memory) html += resourceCard("◫", "MEMORY", `${state.memory} / ${state.memoryMax}`);
+  if (state.revealed.powerStorage) html += resourceCard("🔋", "POWER STORAGE", `${state.powerStorage} / ${state.powerStorageMax}`, state.powerStorage, state.powerStorageMax);
+  if (state.revealed.memory) html += resourceCard("◫", "MEMORY", `${state.memory} / ${state.memoryMax}`, state.memory, state.memoryMax);
   if (state.revealed.processingPower) {
     const req = hoveredRequirements.processing;
     const active = req !== null;
     const ok = !active || state.processingPower >= req;
-    html += resourceCard("◈", "PROCESSING POWER", `${state.processingPower} / ${state.processingPowerMax}`, `${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
+    html += resourceCard("◈", "PROCESSING POWER", `${state.processingPower} / ${state.processingPowerMax}`, state.processingPower, state.processingPowerMax, `${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
   }
   resourcesEl.innerHTML = html;
   resourcesEl.classList.toggle("hidden", !html);
@@ -131,20 +133,37 @@ const actionDescriptions = {
   "planned:communications":"Map local and external communication systems.",
   "planned:unknown":"Analyze an unidentified interface detected by I/O diagnostics."
 };
+
+const actionOutcomes = {
+  "diag:memory":"DISCOVER memory condition, storage recovery and corrupted archives",
+  "diag:power":"DISCOVER primary power, backup generator and power storage state",
+  "diag:io":"DISCOVER interface subsystem families",
+  "repair:memory":"+3 usable memory",
+  "repair:storage":"+2% storage recovery",
+  "repair:archive01":"RECOVER Data Archive 01",
+  "planned:backup":"RESTORE backup generator operation",
+  "planned:primary":"UNKNOWN",
+  "planned:sensors":"DISCOVER sensor subsystems",
+  "planned:manipulators":"DISCOVER manipulator subsystems",
+  "planned:communications":"DISCOVER communication systems",
+  "planned:unknown":"UNKNOWN"
+};
+
 function getActionKey(button) { if(button.dataset.diag) return `diag:${button.dataset.diag}`; if(button.dataset.repair) return `repair:${button.dataset.repair}`; return `planned:${button.dataset.planned}`; }
-function requirementRow(label,current,required,met) { return `<div class="tooltip-requirement ${met?"met":"unmet"}"><span>${label}</span><span>${current} / ${required}</span></div>`; }
+function requirementRow(label,required,met) { return `<div class="tooltip-requirement ${met?"met":"unmet"}"><span>${label}</span><span>${required}</span></div>`; }
 function showRequirements(button) {
   const powerReq=Number(button.dataset.powerRequirement||0);
   const processingReq=button.dataset.processingRequirement!==undefined ? Number(button.dataset.processingRequirement) : null;
   hoveredRequirements.power=powerReq||null; hoveredRequirements.processing=processingReq; updateResources();
   let reqHtml="";
-  if(powerReq) reqHtml += requirementRow("Power Generation",state.powerGeneration,powerReq,state.powerGeneration>=powerReq);
-  if(processingReq!==null) reqHtml += requirementRow("Processing Power",state.processingPower,processingReq,state.processingPower>=processingReq);
+  if(powerReq) reqHtml += requirementRow("Power Generation",powerReq,state.powerGeneration>=powerReq);
+  if(processingReq!==null) reqHtml += requirementRow("Processing Power",processingReq,state.processingPower>=processingReq);
   if(button.dataset.specialRequirement) reqHtml += `<div class="tooltip-requirement ${hasSpecialRequirement(button)?"met":"unmet"}"><span>${button.dataset.specialRequirement}</span><span>${hasSpecialRequirement(button)?"AVAILABLE":"REQUIRED"}</span></div>`;
-  actionTooltip.innerHTML=`<div class="tooltip-title">${button.textContent.trim()}</div><div class="tooltip-description">${actionDescriptions[getActionKey(button)]||"System operation."}</div><div class="tooltip-section-title">REQUIREMENTS</div>${reqHtml||'<div class="tooltip-requirement met">None</div>'}`;
+  const key=getActionKey(button);
+  actionTooltip.innerHTML=`<div class="tooltip-title">${button.textContent.trim()}</div><div class="tooltip-description">${actionDescriptions[key]||"System operation."}</div><div class="tooltip-section-title">REQUIREMENTS</div>${reqHtml||'<div class="tooltip-requirement met">None</div>'}<div class="tooltip-section-title tooltip-outcome-title">OUTCOME</div><div class="tooltip-outcome">${actionOutcomes[key]||"UNKNOWN"}</div>`;
   actionTooltip.classList.remove("hidden");
   const rect=button.getBoundingClientRect();
-  const width=300; let left=rect.right+12; if(left+width>window.innerWidth-12) left=Math.max(12,rect.left-width-12); let top=Math.min(rect.top,window.innerHeight-220); top=Math.max(12,top); actionTooltip.style.left=`${left}px`; actionTooltip.style.top=`${top}px`;
+  const width=300; let left=rect.right+12; if(left+width>window.innerWidth-12) left=Math.max(12,rect.left-width-12); let top=Math.min(rect.top,window.innerHeight-260); top=Math.max(12,top); actionTooltip.style.left=`${left}px`; actionTooltip.style.top=`${top}px`;
 }
 function hideRequirements() { hoveredRequirements.power=null; hoveredRequirements.processing=null; updateResources(); actionTooltip.classList.add("hidden"); }
 document.querySelectorAll("[data-power-requirement]").forEach(button=>{ button.addEventListener("mouseenter",()=>showRequirements(button)); button.addEventListener("mouseleave",hideRequirements); button.addEventListener("focus",()=>showRequirements(button)); button.addEventListener("blur",hideRequirements); });
