@@ -36,7 +36,7 @@ function saveGame() {
   savedState.isShuttingDown = false;
 
   const payload = {
-    version: 2,
+    version: 3,
     savedAt: Date.now(),
     state: savedState,
     mainScreenHtml: terminal.innerHTML
@@ -59,13 +59,38 @@ function loadSaveGame() {
 
     if (state.status.backupPower === "RESTART REQUIRED") {
       state.status.backupPower = "STOPPED";
-      if (payload.state?.status) payload.state.status.backupPower = "STOPPED";
       migrated = true;
     }
 
     if (state.progression.systemDiagnosticsComplete && !state.revealed.systemTime) {
       state.revealed.systemTime = true;
-      if (payload.state?.revealed) payload.state.revealed.systemTime = true;
+      migrated = true;
+    }
+
+    if (state.progression.systemDiagnosticsComplete && !state.timelineEntries.length) {
+      state.timelineEntries.push({ timeSeconds: 0, text: "SYSTEM BOOT" });
+      migrated = true;
+    }
+
+    if (state.progression.firstResetSeen && !state.progression.navigationUnlocked) {
+      state.progression.navigationUnlocked = true;
+      migrated = true;
+    }
+
+    if (state.diagnostics.power && !state.progression.controlPanelUnlocked) {
+      state.progression.controlPanelUnlocked = true;
+      migrated = true;
+    }
+
+    if (state.actions.archive01Repaired && !state.progression.processorArrayKnown) {
+      state.progression.processorArrayKnown = true;
+      migrated = true;
+    }
+
+    if (state.actions.backupRestarted) {
+      state.controls.backupGeneratorUnlocked = true;
+      state.progression.secondaryResourcesUnlocked = true;
+      if (state.status.backupPower !== "ONLINE" && state.controls.backupGeneratorOn) state.status.backupPower = "ONLINE";
       migrated = true;
     }
 
@@ -79,7 +104,8 @@ function loadSaveGame() {
     }
 
     if (migrated) {
-      payload.version = 2;
+      payload.version = 3;
+      payload.state = JSON.parse(JSON.stringify(state));
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     }
 
@@ -111,17 +137,18 @@ function restoreSavedGame() {
   standbyScreen.classList.add("hidden");
   systemScreen.classList.remove("hidden");
 
-  if (state.powerGeneration <= 0 && state.powerStorage <= 0) {
+  if (getTotalGeneration() <= 0 && state.powerStorage <= 0) {
     state.powerGeneration = GAME_CONFIG.generationStart;
     resetSystemResetCountdown();
   }
 
   refreshInterfaceFromState();
-  updateTaskBar();
   refreshShellPanels();
 
-  if (state.progression.systemDiagnosticsComplete) {
+  if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) {
     startRuntimeClock();
+  }
+  if (state.progression.systemDiagnosticsComplete) {
     startPowerCycle();
   }
 }
