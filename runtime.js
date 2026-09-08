@@ -21,18 +21,33 @@ function resetSystemResetCountdown() {
   updateTaskBar();
 }
 
+function tickBackupFuel() {
+  if (!state.controls?.backupGeneratorOn) return;
+  state.secondaryResources.hydrazineBurnSeconds += 1;
+  if (state.secondaryResources.hydrazineBurnSeconds < GAME_CONFIG.hydrazineBurnIntervalSeconds) return;
+
+  state.secondaryResources.hydrazineBurnSeconds = 0;
+  state.secondaryResources.hydrazineReserveHidden = Math.max(0, state.secondaryResources.hydrazineReserveHidden - 1);
+
+  if (state.secondaryResources.hydrazineReserveHidden <= 0) {
+    state.controls.backupGeneratorOn = false;
+    state.status.backupPower = "STOPPED";
+    addLogEntry("Backup generator stopped: hydrazine depleted.");
+    refreshShellPanels();
+    updateSystemStatus();
+    if (state.powerGeneration <= 0 && state.powerStorage <= 0) void shutdownSystem();
+  }
+}
+
 function startRuntimeClock() {
   if (runtimeClockTimer) return;
 
   runtimeClockTimer = setInterval(() => {
-    if (state.revealed.systemTime) {
-      state.systemTimeSeconds += 1;
-    }
+    if (state.revealed.systemTime) state.systemTimeSeconds += 1;
 
-    if (!state.isShuttingDown && state.powerGeneration > 0) {
-      if (state.revealed.systemTime) {
-        state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - 1);
-      }
+    if (!state.isShuttingDown && getTotalGeneration() > 0) {
+      if (state.revealed.systemTime) state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - 1);
+      tickBackupFuel();
       tickTasks();
     }
 
