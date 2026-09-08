@@ -38,7 +38,7 @@ const state = {
     primaryPowerCondition: "DAMAGED",
     primaryPowerDiagnostics: "UNAVAILABLE",
 
-    backupPower: "RESTART REQUIRED",
+    backupPower: "STOPPED",
     backupGenerator: "HYDRAZINE THERMAL CELL",
     backupFault: "HYDRAZINE VALVE BLOCKED",
     backupRestartMethod: "EMERGENCY POWER FEEDBACK LOOP",
