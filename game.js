@@ -6,6 +6,7 @@ function canRunProcess(button) { return buttonRequirementsMet(button); }
 
 function startPowerCycle() {
   if (powerCycleTimer) return;
+  if (state.resetCountdownSeconds <= 0) resetSystemResetCountdown();
   powerCycleTimer = setInterval(async () => {
     if (state.isShuttingDown) return;
     if (state.powerGeneration > 0) {
@@ -37,6 +38,11 @@ async function bootSequence() {
 async function shutdownSystem() {
   if (state.isShuttingDown) return;
   state.isShuttingDown=true; stopPowerCycle(); setAllActionButtonsDisabled(true); hideRequirements();
+  if (!state.progression.firstResetSeen) {
+    state.progression.firstResetSeen = true;
+    addLogEntry("First system reset detected.");
+  }
+  updateTaskBar();
   preStandbyScreenHtml = terminal.innerHTML;
   saveGame(); systemScreen.classList.add("hidden"); standbyScreen.classList.remove("hidden");
   await sleep(GAME_CONFIG.standbyDurationMs);
@@ -46,7 +52,8 @@ async function shutdownSystem() {
 
 async function beginNextPowerCycle() {
   state.powerGeneration=GAME_CONFIG.generationStart; state.isShuttingDown=false; state.isBusy=false;
-  refreshInterfaceFromState(); updateButtons();
+  resetSystemResetCountdown();
+  refreshInterfaceFromState(); updateTaskBar(); updateButtons();
   clearMainScreen();
   systemScreen.classList.add("screen-wake");
   await typeLine("EXTERNAL POWER DETECTED","status-line",12);
@@ -69,9 +76,9 @@ async function runSystemDiagnostics() {
   await typeLine("Primary power .................. ERROR","err",10); await typeLine("Backup power ................... ERROR","err",10); await typeLine("Emergency power ................ ONLINE","status-line",10); state.statusRevealed.emergencyPower=true; updateSystemStatus();
   await typeLine("Memory subsystem ............... DEGRADED","warn",10); await typeLine("I/O subsystem .................. DEGRADED","warn",10); await typeLine("Processing capacity ............ MINIMAL","warn",10); await sleep(300);
   await typeLine("WARNING!!!","err",10); await typeLine("POWER GENERATION UNSTABLE","err",10); await typeLine("AVAILABLE GENERATION BELOW SAFE LIMIT AND DECREASING","err",10);
-  state.revealed.powerGeneration=true; state.revealed.processingPower=true; state.progression.systemDiagnosticsComplete=true;
-  addLogEntry("Ran system diagnostics."); addLogEntry("Discovered emergency power generation."); addLogEntry("Detected primary and backup power faults.");
-  updateResources(); primaryControls.classList.add("hidden"); refreshDiagnosticButtons(); setAllActionButtonsDisabled(false); saveGame(); startPowerCycle();
+  state.revealed.systemTime=true; state.revealed.powerGeneration=true; state.revealed.processingPower=true; state.progression.systemDiagnosticsComplete=true;
+  addLogEntry("Ran system diagnostics."); addLogEntry("System clock initialized."); addLogEntry("Discovered emergency power generation."); addLogEntry("Detected primary and backup power faults.");
+  updateResources(); primaryControls.classList.add("hidden"); refreshDiagnosticButtons(); setAllActionButtonsDisabled(false); saveGame(); startRuntimeClock(); startPowerCycle();
 }
 
 async function runDiagnostic(type, button) {
