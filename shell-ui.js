@@ -48,22 +48,23 @@ function updateResources() {
 
 function updateTaskBar() {
   const items = [];
+
   if (state.progression.firstResetSeen) {
     if (state.controls.backupGeneratorOn) {
       items.push(`<div class="taskbar-item taskbar-stable"><span>SYSTEM RESET</span><strong>PREVENTED</strong></div>`);
     } else {
       items.push(`<div class="taskbar-item taskbar-reset"><span>SYSTEM RESET</span><strong>${formatCountdown(state.resetCountdownSeconds)}</strong></div>`);
     }
+  }
 
-    for (const task of state.runningTasks || []) {
-      if (task.status === "REVIEW") {
-        items.push(`<button class="taskbar-item taskbar-review" type="button" data-review-task="${task.id}"><span>${task.label}</span><strong>REVIEW</strong></button>`);
-        continue;
-      }
-      const statusClass = task.status === "PAUSED" ? " taskbar-paused" : "";
-      const timeText = task.status === "PAUSED" ? "PAUSED" : formatCountdown(task.remainingSeconds);
-      items.push(`<div class="taskbar-item${statusClass}"><span>${task.label}</span><strong>${timeText}</strong></div>`);
+  for (const task of state.runningTasks || []) {
+    if (task.status === "REVIEW") {
+      items.push(`<button class="taskbar-item taskbar-review" type="button" data-review-task="${task.id}"><span>${task.label}</span><strong>REVIEW</strong></button>`);
+      continue;
     }
+    const statusClass = task.status === "PAUSED" ? " taskbar-paused" : "";
+    const timeText = task.status === "PAUSED" ? "PAUSED" : formatCountdown(task.remainingSeconds);
+    items.push(`<div class="taskbar-item${statusClass}"><span>${task.label}</span><strong>${timeText}</strong></div>`);
   }
 
   runningTasksBar.innerHTML = items.join('<span class="taskbar-divider">|</span>');
