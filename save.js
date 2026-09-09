@@ -1,5 +1,5 @@
 const SAVE_KEY = "spark-game-save-v1";
-const SAVE_VERSION = 6;
+const SAVE_VERSION = 7;
 
 function hasSaveGame() {
   return Boolean(localStorage.getItem(SAVE_KEY));
@@ -53,6 +53,7 @@ function normalizeLoadedState() {
   state.isBusy = false;
   state.isShuttingDown = false;
   state.powerGenerationMax = GAME_CONFIG.generationStart;
+  state.accumulatedTimeSeconds = Math.max(0, Number(state.accumulatedTimeSeconds || 0));
   if (!state.ui) state.ui = { currentReportKey: null, currentView: "MAIN" };
   if (!state.ui.currentView) state.ui.currentView = "MAIN";
 
@@ -123,6 +124,13 @@ function loadSaveGame() {
   try {
     const payload = JSON.parse(raw);
     if (!importStatePayload(payload)) return false;
+
+    // Closed/background time never simulates gameplay. It only becomes accumulated time.
+    if (state.progression.hasBooted && Number(payload.savedAt) > 0) {
+      const offlineSeconds = Math.max(0, (Date.now() - Number(payload.savedAt)) / 1000);
+      state.accumulatedTimeSeconds += offlineSeconds;
+    }
+
     if (payload.version !== SAVE_VERSION || payload.mainScreenHtml !== undefined) {
       localStorage.setItem(SAVE_KEY, JSON.stringify(buildSavePayload()));
     }
@@ -158,8 +166,10 @@ function restoreLoadedStateToScreen() {
   refreshShellPanels();
   applyCurrentView();
 
-  if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) startRuntimeClock();
-  if (state.progression.systemDiagnosticsComplete) startPowerCycle();
+  if (!document.hidden) {
+    if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) startRuntimeClock();
+    if (state.progression.systemDiagnosticsComplete) startPowerCycle();
+  }
 }
 
 function restoreSavedGame() {
@@ -168,6 +178,7 @@ function restoreSavedGame() {
     return;
   }
   restoreLoadedStateToScreen();
+  saveGame();
 }
 
 function startNewGame() {
