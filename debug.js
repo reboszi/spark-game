@@ -105,7 +105,13 @@ function stopGameTimersForDebug() {
   state.isShuttingDown = false;
 }
 
-function refreshDebugStateScreen() {
+function resumeDebugRuntime() {
+  if (document.hidden) return;
+  if (state.progression.systemDiagnosticsComplete) startPowerCycle();
+  if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) startRuntimeClock();
+}
+
+function refreshDebugStateScreen({ resume = true } = {}) {
   normalizeLoadedState();
   bootScreen.classList.add("hidden");
   standbyScreen.classList.add("hidden");
@@ -113,6 +119,7 @@ function refreshDebugStateScreen() {
   refreshInterfaceFromState();
   applyCurrentView();
   updateDebugPanel();
+  if (resume) resumeDebugRuntime();
 }
 
 function jumpToDebugPreset(name) {
@@ -164,6 +171,7 @@ function debugStartNewPowerCycle() {
 function debugCompleteTask(taskId) {
   const task = state.runningTasks.find(item => item.id === taskId);
   if (!task) return;
+  stopGameTimersForDebug();
   task.remainingSeconds = 0;
   finishTask(task);
   refreshDebugStateScreen();
@@ -173,6 +181,7 @@ function debugToggleTask(taskId) {
   const task = state.runningTasks.find(item => item.id === taskId);
   if (!task || task.status === "REVIEW") return;
 
+  stopGameTimersForDebug();
   if (task.status === "PAUSED") {
     if (canReservePower(task.power, task.id)) task.status = "RUNNING";
   } else {
@@ -182,6 +191,7 @@ function debugToggleTask(taskId) {
 }
 
 function debugCompleteAllTasks() {
+  stopGameTimersForDebug();
   for (const task of [...state.runningTasks]) {
     task.remainingSeconds = 0;
     finishTask(task);
