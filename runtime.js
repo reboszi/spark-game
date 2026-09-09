@@ -40,7 +40,7 @@ function resetSystemResetCountdown() {
   updateTaskBar();
 }
 
-function tickBackupFuel(deltaSeconds) {
+function tickBackupFuel(deltaSeconds, allowShutdown = true) {
   if (!state.controls.backupGeneratorOn) {
     state.secondaryResources.hydrazineTrend = "STABLE";
     return;
@@ -65,7 +65,7 @@ function tickBackupFuel(deltaSeconds) {
   addLogEntry("Backup generator stopped: hydrazine depleted.");
   pauseTasksForPower();
 
-  if (state.powerGeneration <= 0 && state.powerStorage <= 0) void shutdownSystem();
+  if (allowShutdown && state.powerGeneration <= 0 && state.powerStorage <= 0) void shutdownSystem();
 }
 
 function startPowerCycle() {
@@ -84,7 +84,7 @@ function restoreExternalGenerationFromRuntime() {
   resumePausedTasks();
 }
 
-function tickExternalPower(deltaSeconds) {
+function tickExternalPower(deltaSeconds, allowShutdown = true) {
   if (!powerCycleActive || state.isShuttingDown || !state.progression.systemDiagnosticsComplete) return;
 
   if (state.powerGeneration <= 0) {
@@ -112,26 +112,27 @@ function tickExternalPower(deltaSeconds) {
   state.powerGenerationTickProgressSeconds = 0;
   if (state.controls.backupGeneratorOn || state.powerStorage > 0) {
     state.externalRecoverySecondsRemaining = GAME_CONFIG.standbyDurationMs / 1000;
-  } else {
+  } else if (allowShutdown) {
     void shutdownSystem();
   }
 }
 
-function advanceGameSimulation(deltaSeconds) {
+function advanceGameSimulation(deltaSeconds, { allowShutdown = true, autosave = true } = {}) {
   const delta = Math.max(0, Number(deltaSeconds || 0));
   if (!delta) return;
 
   if (state.revealed.systemTime) state.systemTimeSeconds += delta;
   if (state.isShuttingDown) return;
 
-  tickExternalPower(delta);
+  tickExternalPower(delta, allowShutdown);
   if (state.isShuttingDown) return;
 
-  tickBackupFuel(delta);
+  tickBackupFuel(delta, allowShutdown);
   if (state.isShuttingDown) return;
 
   tickTasks(delta);
 
+  if (!autosave) return;
   autosaveElapsedSeconds += delta;
   if (autosaveElapsedSeconds >= GAME_CONFIG.autosaveIntervalSeconds) {
     autosaveElapsedSeconds = 0;
