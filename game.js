@@ -1,4 +1,5 @@
 let powerCycleTimer = null;
+let powerCycleLastTickAt = null;
 let externalRecoveryTimer = null;
 let preStandbyScreenHtml = "";
 let mainOutputQueue = Promise.resolve();
@@ -24,35 +25,47 @@ function scheduleExternalGenerationRestore() {
   externalRecoveryTimer = setTimeout(restoreExternalGeneration, GAME_CONFIG.standbyDurationMs);
 }
 
+async function processPowerCycleElapsed() {
+  if (state.isShuttingDown) return;
+  const now = Date.now();
+  if (powerCycleLastTickAt === null) powerCycleLastTickAt = now;
+
+  const elapsedMs = Math.max(0, now - powerCycleLastTickAt);
+  const ticks = Math.floor(elapsedMs / GAME_CONFIG.generationTickMs);
+  if (ticks <= 0) return;
+
+  powerCycleLastTickAt += ticks * GAME_CONFIG.generationTickMs;
+
+  if (state.powerGeneration > 0) {
+    state.powerGeneration = Math.max(0, state.powerGeneration - ticks);
+    pauseTasksForPower();
+    updateResources();
+    updateTaskBar();
+    saveGame();
+  }
+
+  if (state.powerGeneration > 0) return;
+
+  if (state.controls?.backupGeneratorOn || state.powerStorage > 0) {
+    scheduleExternalGenerationRestore();
+    return;
+  }
+
+  await shutdownSystem();
+}
+
 function startPowerCycle() {
   if (powerCycleTimer) return;
   if (state.resetCountdownSeconds <= 0 && state.powerGeneration > 0) resetSystemResetCountdown();
-  powerCycleTimer = setInterval(async () => {
-    if (state.isShuttingDown) return;
-
-    if (state.powerGeneration > 0) {
-      state.powerGeneration = Math.max(0, state.powerGeneration - 1);
-      pauseTasksForPower();
-      updateResources();
-      updateTaskBar();
-      saveGame();
-    }
-
-    if (state.powerGeneration > 0) return;
-
-    if (state.controls?.backupGeneratorOn || state.powerStorage > 0) {
-      scheduleExternalGenerationRestore();
-      return;
-    }
-
-    await shutdownSystem();
-  }, GAME_CONFIG.generationTickMs);
+  powerCycleLastTickAt = Date.now();
+  powerCycleTimer = setInterval(() => { void processPowerCycleElapsed(); }, 1000);
 }
 
 function stopPowerCycle() {
   if (!powerCycleTimer) return;
   clearInterval(powerCycleTimer);
   powerCycleTimer = null;
+  powerCycleLastTickAt = null;
 }
 
 async function bootSequence() {
@@ -174,3 +187,7 @@ diagnosticControls.addEventListener("click",event=>{ const button=event.target.c
 repairControls.addEventListener("click",event=>{ const button=event.target.closest("button[data-repair]"); if(button) beginRepair(button.dataset.repair,button); });
 plannedControls.addEventListener("click",event=>{ const button=event.target.closest("button[data-planned]"); if(button) beginPlanned(button.dataset.planned,button); });
 configureStartMenu();
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && powerCycleTimer) void processPowerCycleElapsed();
+});
