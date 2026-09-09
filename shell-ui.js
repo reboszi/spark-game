@@ -57,7 +57,7 @@ function taskProgress(task) {
 
 function taskItemHtml(task) {
   if (task.status === "REVIEW") {
-    return `<button class="taskbar-item taskbar-review" type="button" data-review-task="${task.id}"><span class="taskbar-label">${task.label}</span><strong>REVIEW</strong><span class="task-progress"><span style="width:100%"></span></span></button>`;
+    return `<button class="taskbar-item taskbar-review" type="button" data-review-task="${task.id}"><span class="taskbar-label">${task.label}</span><strong>REPORT</strong><span class="task-progress"><span style="width:100%"></span></span></button>`;
   }
 
   const statusClass = task.status === "PAUSED" ? " taskbar-paused" : "";
