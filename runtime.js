@@ -25,10 +25,11 @@ function resetSystemResetCountdown() {
 function tickBackupFuel(deltaSeconds) {
   if (!state.controls?.backupGeneratorOn) return;
   state.secondaryResources.hydrazineBurnSeconds += deltaSeconds;
-  if (state.secondaryResources.hydrazineBurnSeconds < GAME_CONFIG.hydrazineBurnIntervalSeconds) return;
 
-  state.secondaryResources.hydrazineBurnSeconds -= GAME_CONFIG.hydrazineBurnIntervalSeconds;
-  state.secondaryResources.hydrazineReserveHidden = Math.max(0, state.secondaryResources.hydrazineReserveHidden - 1);
+  while (state.secondaryResources.hydrazineBurnSeconds >= GAME_CONFIG.hydrazineBurnIntervalSeconds && state.secondaryResources.hydrazineReserveHidden > 0) {
+    state.secondaryResources.hydrazineBurnSeconds -= GAME_CONFIG.hydrazineBurnIntervalSeconds;
+    state.secondaryResources.hydrazineReserveHidden = Math.max(0, state.secondaryResources.hydrazineReserveHidden - 1);
+  }
 
   if (state.secondaryResources.hydrazineReserveHidden <= 0) {
     state.controls.backupGeneratorOn = false;
@@ -41,30 +42,37 @@ function tickBackupFuel(deltaSeconds) {
   }
 }
 
+function processRuntimeElapsed(deltaSeconds) {
+  const delta = Math.max(0, Number(deltaSeconds || 0));
+  if (!delta) return;
+
+  if (state.revealed.systemTime) state.systemTimeSeconds += delta;
+
+  if (!state.isShuttingDown && state.powerGeneration > 0 && state.revealed.systemTime) {
+    state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - delta);
+  }
+
+  if (!state.isShuttingDown) {
+    tickBackupFuel(delta);
+    tickTasks(delta);
+  }
+}
+
+function runtimeTick() {
+  const now = Date.now();
+  if (runtimeLastTickAt === null) runtimeLastTickAt = now;
+  const deltaSeconds = Math.max(0, (now - runtimeLastTickAt) / 1000);
+  runtimeLastTickAt = now;
+
+  processRuntimeElapsed(deltaSeconds);
+  updateResources();
+  updateTaskBar();
+}
+
 function startRuntimeClock() {
   if (runtimeClockTimer) return;
-  runtimeLastTickAt = performance.now();
-
-  runtimeClockTimer = setInterval(() => {
-    const now = performance.now();
-    const deltaSeconds = Math.min(0.25, Math.max(0, (now - runtimeLastTickAt) / 1000));
-    runtimeLastTickAt = now;
-
-    if (state.revealed.systemTime) state.systemTimeSeconds += deltaSeconds;
-
-    // Countdown follows the external generation cycle only. Tasks never delay it.
-    if (!state.isShuttingDown && state.powerGeneration > 0 && state.revealed.systemTime) {
-      state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - deltaSeconds);
-    }
-
-    if (!state.isShuttingDown) {
-      tickBackupFuel(deltaSeconds);
-      tickTasks(deltaSeconds);
-    }
-
-    updateResources();
-    updateTaskBar();
-  }, 100);
+  runtimeLastTickAt = Date.now();
+  runtimeClockTimer = setInterval(runtimeTick, 100);
 }
 
 function stopRuntimeClock() {
@@ -73,3 +81,8 @@ function stopRuntimeClock() {
   runtimeClockTimer = null;
   runtimeLastTickAt = null;
 }
+
+document.addEventListener("visibilitychange", () => {
+  if (!runtimeClockTimer || document.hidden) return;
+  runtimeTick();
+});
