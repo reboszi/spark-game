@@ -52,6 +52,11 @@ function startRuntimeClock() {
 
     if (state.revealed.systemTime) state.systemTimeSeconds += deltaSeconds;
 
+    // Countdown follows the external generation cycle only. Tasks never delay it.
+    if (!state.isShuttingDown && state.powerGeneration > 0 && state.revealed.systemTime) {
+      state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - deltaSeconds);
+    }
+
     if (!state.isShuttingDown) {
       tickBackupFuel(deltaSeconds);
       tickTasks(deltaSeconds);
