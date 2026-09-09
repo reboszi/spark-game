@@ -65,6 +65,8 @@ const REPORTS = {
   ]
 };
 
+let reportRenderToken = 0;
+
 function inferReportKeyFromLegacyHtml(html) {
   const text = html || "";
   if (text.includes("MEMORY DIAGNOSTICS")) return "diag:memory";
@@ -77,13 +79,32 @@ function inferReportKeyFromLegacyHtml(html) {
   return null;
 }
 
+async function typeReportLine(text, cls, token) {
+  const line = document.createElement("div");
+  if (cls) line.className = cls;
+  terminal.appendChild(line);
+
+  for (let i = 0; i < text.length; i++) {
+    if (token !== reportRenderToken) return false;
+    line.textContent += text[i];
+    await sleep(8);
+  }
+  return token === reportRenderToken;
+}
+
 async function renderReport(key, animated = false) {
   const lines = REPORTS[key];
   if (!lines) return false;
+
   state.ui.currentReportKey = key;
+  const token = ++reportRenderToken;
   clearMainScreen();
+
   if (animated) {
-    for (const [text, cls] of lines) await typeLine(text, cls, 10);
+    for (const [text, cls] of lines) {
+      if (!(await typeReportLine(text, cls, token))) return false;
+      await sleep(45);
+    }
   } else {
     terminal.innerHTML = lines.map(([text, cls]) => `<div class="${cls || ""}">${text}</div>`).join("");
   }
@@ -95,5 +116,6 @@ function renderCurrentMainScreen() {
     void renderReport(state.ui.currentReportKey, false);
     return;
   }
+  reportRenderToken++;
   clearMainScreen();
 }
