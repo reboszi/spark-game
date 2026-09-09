@@ -10,6 +10,7 @@ const state = {
   powerGeneration: GAME_CONFIG.generationStart,
   powerGenerationMax: GAME_CONFIG.generationStart,
   powerGenerationTickProgressSeconds: 0,
+  externalRecoverySecondsRemaining: 0,
   powerStorage: 0,
   powerStorageMax: 0,
 
