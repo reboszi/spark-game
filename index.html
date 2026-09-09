@@ -5,8 +5,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SPARK — Prototype</title>
-  <link rel="stylesheet" href="style.css?v=18" />
-  <link rel="stylesheet" href="ui-effects.css?v=18" />
+  <link rel="stylesheet" href="style.css?v=19" />
+  <link rel="stylesheet" href="ui-effects.css?v=19" />
 </head>
 
 <body>
@@ -98,17 +98,63 @@
       </div>
     </section>
 
+    <aside id="debugPanel" class="debug-panel hidden">
+      <div class="debug-header"><strong>DEVELOPER TOOLS</strong><span>Ctrl+Shift+D</span></div>
+
+      <div class="debug-section">
+        <div class="debug-title">JUMP TO</div>
+        <div class="debug-grid">
+          <button data-debug-jump="BOOT">BOOT</button>
+          <button data-debug-jump="POST_SYSTEM_DIAGNOSTICS">POST SYSTEM DIAGNOSTICS</button>
+          <button data-debug-jump="FIRST_RESET">FIRST RESET</button>
+          <button data-debug-jump="BASIC_DIAGNOSTICS">BASIC DIAGNOSTICS</button>
+          <button data-debug-jump="ARCHIVE_01_AVAILABLE">ARCHIVE 01 AVAILABLE</button>
+          <button data-debug-jump="ARCHIVE_01_RECOVERED">ARCHIVE 01 RECOVERED</button>
+          <button data-debug-jump="PROCESSOR_CORE_02_ONLINE">PROCESSOR CORE 02 ONLINE</button>
+          <button data-debug-jump="BACKUP_POWER_READY">BACKUP POWER READY</button>
+          <button data-debug-jump="BACKUP_POWER_ONLINE">BACKUP POWER ONLINE</button>
+        </div>
+      </div>
+
+      <div class="debug-section">
+        <div class="debug-title">TIME / POWER</div>
+        <div class="debug-grid compact">
+          <button data-debug-advance="10">+10 SEC</button>
+          <button data-debug-advance="60">+60 SEC</button>
+          <button data-debug-force-loss>FORCE POWER LOSS</button>
+          <button data-debug-new-cycle>NEW POWER CYCLE</button>
+        </div>
+      </div>
+
+      <div class="debug-section">
+        <div class="debug-title">TASKS</div>
+        <div id="debugTaskList"></div>
+        <button data-debug-complete-all>COMPLETE ALL</button>
+      </div>
+
+      <div class="debug-section">
+        <div class="debug-title">SAVE / SNAPSHOT</div>
+        <div class="debug-grid compact">
+          <button data-debug-export>EXPORT SNAPSHOT</button>
+          <button data-debug-import>IMPORT SNAPSHOT</button>
+          <button data-debug-delete-save>DELETE PLAYER SAVE</button>
+        </div>
+      </div>
+    </aside>
+
     <div id="actionTooltip" class="action-tooltip hidden"></div>
   </main>
 
-  <script src="state.js?v=18"></script>
-  <script src="ui.js?v=18"></script>
-  <script src="tasks.js?v=18"></script>
-  <script src="requirements.js?v=18"></script>
-  <script src="shell-ui.js?v=18"></script>
-  <script src="runtime.js?v=18"></script>
-  <script src="save.js?v=18"></script>
-  <script src="game.js?v=18"></script>
+  <script src="state.js?v=19"></script>
+  <script src="ui.js?v=19"></script>
+  <script src="tasks.js?v=19"></script>
+  <script src="requirements.js?v=19"></script>
+  <script src="shell-ui.js?v=19"></script>
+  <script src="runtime.js?v=19"></script>
+  <script src="reports.js?v=19"></script>
+  <script src="save.js?v=19"></script>
+  <script src="game.js?v=19"></script>
+  <script src="debug.js?v=19"></script>
 </body>
 
 </html>
