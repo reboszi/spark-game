@@ -74,7 +74,8 @@ button[data-special-requirement]::after{ content:"REQ: " attr(data-special-requi
 .task-progress{ grid-column:1 / -1; display:block; width:100%; height:3px; background:#0a180b; border:1px solid var(--line); overflow:hidden; }
 .task-progress > span{ display:block; height:100%; background:var(--green); box-shadow:0 0 5px rgba(118,255,118,.45); }
 .taskbar-paused .task-progress > span{ background:var(--warn); }
-button.taskbar-review{ min-height:34px; padding:4px 7px; border:1px solid var(--green); background:transparent; color:var(--green); font-size:inherit; letter-spacing:inherit; }
+button.taskbar-review{ min-height:34px; padding:4px 7px; border:1px solid var(--green); background:transparent; color:var(--green); font-size:inherit; letter-spacing:inherit; cursor:pointer; }
+button.taskbar-review > *{ pointer-events:none; }
 button.taskbar-review strong{ color:var(--green-bright); }
 
 .resource{ display:flex; align-items:center; gap:7px; transition:color .12s ease,text-shadow .12s ease; }
