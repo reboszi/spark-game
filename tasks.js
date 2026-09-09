@@ -76,12 +76,15 @@ function pauseTasksForPower() {
 }
 
 function resumePausedTasks() {
+  let changed = false;
   for (const task of state.runningTasks || []) {
     if (task.status !== "PAUSED") continue;
     if (!canReservePower(task.power, task.id)) continue;
     task.status = "RUNNING";
+    changed = true;
     addLogEntry(`${task.label} resumed.`);
   }
+  if (changed) saveGame();
   updateResources();
   updateTaskBar();
   updateButtons();
@@ -99,6 +102,8 @@ function finishTask(task) {
     removeTask(task.id);
   }
 
+  // A completed/review task no longer reserves power. Resume anything that can now run.
+  resumePausedTasks();
   updateResources();
   updateTaskBar();
   updateButtons();
@@ -114,19 +119,20 @@ function reviewTask(taskId) {
   if (!task) return;
   applyTaskResult(task.key);
   removeTask(task.id);
+  resumePausedTasks();
   updateResources();
   updateTaskBar();
   updateButtons();
   saveGame();
 }
 
-function tickTasks() {
+function tickTasks(deltaSeconds = 1) {
   pauseTasksForPower();
 
   const completed = [];
   for (const task of state.runningTasks || []) {
     if (task.status !== "RUNNING") continue;
-    task.remainingSeconds = Math.max(0, Number(task.remainingSeconds || 0) - 1);
+    task.remainingSeconds = Math.max(0, Number(task.remainingSeconds || 0) - deltaSeconds);
     if (task.remainingSeconds <= 0) completed.push(task);
   }
 
