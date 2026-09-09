@@ -1,5 +1,5 @@
 const TASK_DEFINITIONS = {
-  "system:diagnostics": { label: "SYSTEM DIAGNOSTICS", duration: 6, power: 0, review: true },
+  "system:diagnostics": { label: "SYSTEM DIAGNOSTICS", duration: 6, power: 0, review: false },
   "diag:memory": { label: "MEMORY DIAGNOSTICS", duration: 7, power: 2, review: true },
   "diag:power": { label: "POWER DIAGNOSTICS", duration: 7, power: 1, review: true },
   "diag:io": { label: "I/O DIAGNOSTICS", duration: 8, power: 2, review: true },
@@ -94,15 +94,14 @@ function finishTask(task) {
   if (!task) return;
   task.remainingSeconds = 0;
 
-  if (task.review && state.progression.firstResetSeen) {
+  if (task.review) {
     task.status = "REVIEW";
-    addLogEntry(`${task.label} complete. Review available.`);
+    addLogEntry(`${task.label} complete. Report available.`);
   } else {
     applyTaskResult(task.key);
     removeTask(task.id);
   }
 
-  // A completed/review task no longer reserves power. Resume anything that can now run.
   resumePausedTasks();
   updateResources();
   updateTaskBar();
