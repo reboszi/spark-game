@@ -24,13 +24,28 @@ function mergeState(target, source) {
 
 function canonicalStateSnapshot() {
   const snapshot = JSON.parse(JSON.stringify(state));
+
   delete snapshot.isBusy;
   delete snapshot.isShuttingDown;
   delete snapshot.powerGenerationMax;
+
   if (snapshot.status) {
     delete snapshot.status.systemIntegrity;
     delete snapshot.status.memoryIntegrity;
+    delete snapshot.status.archive01;
+    delete snapshot.status.backupPower;
   }
+
+  if (snapshot.progression) {
+    delete snapshot.progression.taskbarUnlocked;
+    delete snapshot.progression.navigationUnlocked;
+    delete snapshot.progression.controlPanelUnlocked;
+    delete snapshot.progression.secondaryResourcesUnlocked;
+    delete snapshot.progression.processorArrayKnown;
+  }
+
+  if (snapshot.controls) delete snapshot.controls.backupGeneratorUnlocked;
+
   return snapshot;
 }
 
@@ -38,22 +53,22 @@ function normalizeLoadedState() {
   state.isBusy = false;
   state.isShuttingDown = false;
   state.powerGenerationMax = GAME_CONFIG.generationStart;
+
   state.status.memoryIntegrity = Math.round((state.memory / state.memoryMax) * 100);
+  state.status.archive01 = state.actions.archive01Repaired ? "RECOVERED" : "CORRUPTED";
+  state.status.backupPower = state.actions.backupRestarted && state.controls.backupGeneratorOn ? "ONLINE" : "STOPPED";
+
   const integrity = calculateSystemIntegrity();
   state.status.systemIntegrity = integrity === null ? 0 : integrity;
 
-  if (state.status.backupPower === "RESTART REQUIRED") state.status.backupPower = "STOPPED";
-  if (state.progression.systemDiagnosticsComplete) state.revealed.systemTime = true;
-  if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) state.progression.taskbarUnlocked = true;
-  if (state.progression.firstResetSeen) state.progression.navigationUnlocked = true;
-  if (state.diagnostics.power) state.progression.controlPanelUnlocked = true;
-  if (state.actions.archive01Repaired) state.progression.processorArrayKnown = true;
+  state.progression.taskbarUnlocked = Boolean(state.progression.systemDiagnosticsComplete || state.runningTasks.length);
+  state.progression.navigationUnlocked = Boolean(state.progression.firstResetSeen);
+  state.progression.controlPanelUnlocked = Boolean(state.diagnostics.power);
+  state.progression.secondaryResourcesUnlocked = Boolean(state.actions.backupRestarted);
+  state.progression.processorArrayKnown = Boolean(state.actions.archive01Repaired);
+  state.controls.backupGeneratorUnlocked = Boolean(state.actions.backupRestarted);
 
-  if (state.actions.backupRestarted) {
-    state.controls.backupGeneratorUnlocked = true;
-    state.progression.secondaryResourcesUnlocked = true;
-    if (state.controls.backupGeneratorOn) state.status.backupPower = "ONLINE";
-  }
+  if (state.progression.systemDiagnosticsComplete) state.revealed.systemTime = true;
 
   for (const task of state.runningTasks || []) {
     const definition = TASK_DEFINITIONS[task.key];
