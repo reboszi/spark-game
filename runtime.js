@@ -41,14 +41,9 @@ function resetSystemResetCountdown() {
 }
 
 function tickBackupFuel(deltaSeconds, allowShutdown = true) {
-  if (!state.controls.backupGeneratorOn) {
-    state.secondaryResources.hydrazineTrend = "STABLE";
-    return;
-  }
+  if (!state.controls.backupGeneratorOn) return;
 
-  state.secondaryResources.hydrazineTrend = "DECREASING";
   state.secondaryResources.hydrazineBurnSeconds += deltaSeconds;
-
   while (
     state.secondaryResources.hydrazineBurnSeconds >= GAME_CONFIG.hydrazineBurnIntervalSeconds
     && state.secondaryResources.hydrazineReserveHidden > 0
@@ -60,8 +55,7 @@ function tickBackupFuel(deltaSeconds, allowShutdown = true) {
   if (state.secondaryResources.hydrazineReserveHidden > 0) return;
 
   state.controls.backupGeneratorOn = false;
-  state.secondaryResources.hydrazineTrend = "STABLE";
-  state.status.backupPower = "STOPPED";
+  syncDerivedState();
   addLogEntry("Backup generator stopped: hydrazine depleted.");
   pauseTasksForPower();
 
