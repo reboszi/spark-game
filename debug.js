@@ -141,7 +141,7 @@ function debugAdvanceTime(seconds) {
     state.systemTimeSeconds += 1;
     state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - 1);
     tickTasks(1);
-    tickBackupFuel();
+    tickBackupFuel(1);
 
     if (second % Math.round(GAME_CONFIG.generationTickMs / 1000) === 0 && state.powerGeneration > 0) {
       state.powerGeneration = Math.max(0, state.powerGeneration - 1);
@@ -223,6 +223,10 @@ function importDebugSnapshot() {
 function updateDebugPanel() {
   const panel = document.getElementById("debugPanel");
   if (!panel || panel.classList.contains("hidden")) return;
+
+  const headerInfo = panel.querySelector(".debug-header span");
+  if (headerInfo) headerInfo.textContent = `ACC ${formatAccumulatedTime(state.accumulatedTimeSeconds)} · Ctrl+Shift+D`;
+
   const tasks = state.runningTasks || [];
   const taskList = document.getElementById("debugTaskList");
   taskList.innerHTML = tasks.length
