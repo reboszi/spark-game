@@ -7,6 +7,12 @@ const controlContent = document.getElementById("controlContent");
 const secondaryResourcesPanel = document.getElementById("secondaryResourcesPanel");
 const secondaryResourcesContent = document.getElementById("secondaryResourcesContent");
 
+let resourcesRenderCache = null;
+let taskbarStructureCache = null;
+let navigationRenderCache = null;
+let controlRenderCache = null;
+let secondaryResourcesRenderCache = null;
+
 function systemTimeCard() {
   return `<div class="resource system-time-resource"><span class="resource-icon">◷</span><span class="resource-name">SYSTEM TIME</span><span class="resource-value">${formatSystemTime(state.systemTimeSeconds)}</span></div>`;
 }
@@ -59,7 +65,10 @@ function updateResources() {
     );
   }
 
-  resourcesEl.innerHTML = html;
+  if (html !== resourcesRenderCache) {
+    resourcesEl.innerHTML = html;
+    resourcesRenderCache = html;
+  }
   resourcesEl.classList.toggle("hidden", !html);
   systemScreen.classList.toggle("resources-visible", Boolean(html));
 }
@@ -72,44 +81,82 @@ function taskProgress(task) {
 
 function taskItemHtml(task) {
   if (task.status === "REVIEW") {
-    return `<button class="taskbar-item taskbar-review" type="button" data-review-task="${task.id}"><span class="taskbar-label">${task.label}</span><strong>REPORT</strong><span class="task-progress"><span style="width:100%"></span></span></button>`;
+    return `<button class="taskbar-item taskbar-review" type="button" data-task-id="${task.id}" data-review-task="${task.id}"><span class="taskbar-label">${task.label}</span><strong>REPORT</strong><span class="task-progress"><span style="width:100%"></span></span></button>`;
   }
 
   const statusClass = task.status === "PAUSED" ? " taskbar-paused" : "";
-  const timeText = task.status === "PAUSED" ? "PAUSED" : formatCountdown(task.remainingSeconds);
-  return `<div class="taskbar-item taskbar-task${statusClass}"><span class="taskbar-label">${task.label}</span><strong>${timeText}</strong><span class="task-progress"><span style="width:${taskProgress(task)}%"></span></span></div>`;
+  return `<div class="taskbar-item taskbar-task${statusClass}" data-task-id="${task.id}"><span class="taskbar-label">${task.label}</span><strong></strong><span class="task-progress"><span></span></span></div>`;
 }
 
-function updateTaskBar() {
-  const unlocked = Boolean(state.progression.taskbarUnlocked);
-  const items = [];
+function taskbarStructureSignature(unlocked) {
+  const resetMode = !state.progression.firstResetSeen
+    ? "NO_RESET"
+    : state.controls.backupGeneratorOn
+      ? "RESET_PREVENTED"
+      : "RESET_COUNTDOWN";
+  const tasks = state.runningTasks.map(task => `${task.id}:${task.status}`).join("|");
+  return `${unlocked}:${resetMode}:${tasks}`;
+}
 
+function renderTaskbarStructure(unlocked) {
+  const items = [];
   if (state.progression.firstResetSeen) {
     if (state.controls.backupGeneratorOn) {
-      items.push(`<div class="taskbar-item taskbar-reset taskbar-stable"><span>SYSTEM RESET</span><strong>PREVENTED</strong></div>`);
+      items.push(`<div class="taskbar-item taskbar-reset taskbar-stable" data-reset-indicator><span>SYSTEM RESET</span><strong>PREVENTED</strong></div>`);
     } else {
-      items.push(`<div class="taskbar-item taskbar-reset"><span>SYSTEM RESET</span><strong>${formatCountdown(getExternalPowerCountdownSeconds())}</strong></div>`);
+      items.push(`<div class="taskbar-item taskbar-reset" data-reset-indicator><span>SYSTEM RESET</span><strong></strong></div>`);
     }
   }
 
   for (const task of state.runningTasks) items.push(taskItemHtml(task));
   if (unlocked && items.length === 0) items.push(`<div class="taskbar-empty">NO RUNNING TASKS</div>`);
-
   runningTasksBar.innerHTML = items.join('<span class="taskbar-divider">|</span>');
+}
+
+function updateTaskBar() {
+  const unlocked = Boolean(state.progression.taskbarUnlocked);
+  const signature = taskbarStructureSignature(unlocked);
+  if (signature !== taskbarStructureCache) {
+    renderTaskbarStructure(unlocked);
+    taskbarStructureCache = signature;
+  }
+
+  const resetIndicator = runningTasksBar.querySelector("[data-reset-indicator]");
+  if (resetIndicator && !state.controls.backupGeneratorOn) {
+    const value = resetIndicator.querySelector("strong");
+    if (value) value.textContent = formatCountdown(getExternalPowerCountdownSeconds());
+  }
+
+  const taskElements = new Map(
+    [...runningTasksBar.querySelectorAll("[data-task-id]")]
+      .map(element => [element.dataset.taskId, element])
+  );
+  for (const task of state.runningTasks) {
+    if (task.status === "REVIEW") continue;
+    const element = taskElements.get(task.id);
+    if (!element) continue;
+    const time = element.querySelector("strong");
+    if (time) time.textContent = task.status === "PAUSED" ? "PAUSED" : formatCountdown(task.remainingSeconds);
+    const progress = element.querySelector(".task-progress > span");
+    if (progress) progress.style.width = `${taskProgress(task)}%`;
+  }
+
   runningTasksBar.classList.toggle("hidden", !unlocked);
   systemScreen.classList.toggle("tasks-visible", unlocked);
-
   if (typeof updateDebugPanel === "function") updateDebugPanel();
 }
 
 function renderNavigation() {
-  navigationPanel.classList.toggle("hidden", !state.progression.navigationUnlocked);
-  if (!state.progression.navigationUnlocked) return;
-
+  const unlocked = Boolean(state.progression.navigationUnlocked);
+  navigationPanel.classList.toggle("hidden", !unlocked);
   const currentView = state.ui.currentView || "MAIN";
-  navigationPanel.innerHTML = `
-    <button type="button" data-view="MAIN" class="nav-button ${currentView === "MAIN" ? "active" : ""}">MAIN</button>
-    <button type="button" data-view="TIMELINE" class="nav-button ${currentView === "TIMELINE" ? "active" : ""}">TIMELINE</button>`;
+  const signature = `${unlocked}:${currentView}`;
+  if (signature === navigationRenderCache) return;
+
+  navigationPanel.innerHTML = unlocked
+    ? `<button type="button" data-view="MAIN" class="nav-button ${currentView === "MAIN" ? "active" : ""}">MAIN</button><button type="button" data-view="TIMELINE" class="nav-button ${currentView === "TIMELINE" ? "active" : ""}">TIMELINE</button>`
+    : "";
+  navigationRenderCache = signature;
 }
 
 function renderTimeline() {
@@ -150,47 +197,38 @@ function switchMainView(view) {
 }
 
 function renderControlPanel() {
-  controlPanel.classList.toggle("hidden", !state.progression.controlPanelUnlocked);
-  if (!state.progression.controlPanelUnlocked) {
-    controlContent.innerHTML = "";
-    return;
-  }
-
+  const visible = Boolean(state.progression.controlPanelUnlocked);
+  controlPanel.classList.toggle("hidden", !visible);
   const locked = !state.controls.backupGeneratorUnlocked;
-  controlContent.innerHTML = `
-    <div class="control-unit">
-      <div class="control-label">BACKUP GENERATOR</div>
-      <button type="button" class="power-switch ${state.controls.backupGeneratorOn ? "on" : "off"} ${locked ? "locked" : ""}" data-control="backup" ${locked ? "disabled" : ""}>
-        <span class="switch-lever"></span>
-        <span class="switch-state">${locked ? "LOCKED" : state.controls.backupGeneratorOn ? "ON" : "OFF"}</span>
-      </button>
-    </div>`;
+  const signature = `${visible}:${locked}:${state.controls.backupGeneratorOn}`;
+  if (signature === controlRenderCache) return;
+
+  controlContent.innerHTML = visible
+    ? `<div class="control-unit"><div class="control-label">BACKUP GENERATOR</div><button type="button" class="power-switch ${state.controls.backupGeneratorOn ? "on" : "off"} ${locked ? "locked" : ""}" data-control="backup" ${locked ? "disabled" : ""}><span class="switch-lever"></span><span class="switch-state">${locked ? "LOCKED" : state.controls.backupGeneratorOn ? "ON" : "OFF"}</span></button></div>`
+    : "";
+  controlRenderCache = signature;
 }
 
 function renderSecondaryResources() {
-  secondaryResourcesPanel.classList.toggle("hidden", !state.progression.secondaryResourcesUnlocked);
-  if (!state.progression.secondaryResourcesUnlocked) {
-    secondaryResourcesContent.innerHTML = "";
+  const visible = Boolean(state.progression.secondaryResourcesUnlocked);
+  secondaryResourcesPanel.classList.toggle("hidden", !visible);
+  if (!visible) {
+    if (secondaryResourcesRenderCache !== "") secondaryResourcesContent.innerHTML = "";
+    secondaryResourcesRenderCache = "";
     return;
   }
 
   const trend = state.secondaryResources.hydrazineTrend || "STABLE";
-  const trendClass = trend === "INCREASING"
-    ? "resource-trend-up"
-    : trend === "DECREASING"
-      ? "resource-trend-down"
-      : "resource-trend-stable";
+  const trendClass = trend === "INCREASING" ? "resource-trend-up" : trend === "DECREASING" ? "resource-trend-down" : "resource-trend-stable";
   const trendIcon = trend === "INCREASING" ? "↑" : trend === "DECREASING" ? "↓" : "·";
-  const value = state.secondaryResources.hydrazineKnown
-    ? state.secondaryResources.hydrazineReserveHidden
-    : "UNKNOWN";
+  const value = state.secondaryResources.hydrazineKnown ? state.secondaryResources.hydrazineReserveHidden : "UNKNOWN";
   const valueClass = state.secondaryResources.hydrazineKnown ? "" : "err";
+  const html = `<div class="secondary-resource-row ${trendClass}"><span class="secondary-resource-name"><span class="resource-trend-icon">${trendIcon}</span> HYDRAZINE</span><strong class="${valueClass}">${value}</strong></div>`;
 
-  secondaryResourcesContent.innerHTML = `
-    <div class="secondary-resource-row ${trendClass}">
-      <span class="secondary-resource-name"><span class="resource-trend-icon">${trendIcon}</span> HYDRAZINE</span>
-      <strong class="${valueClass}">${value}</strong>
-    </div>`;
+  if (html !== secondaryResourcesRenderCache) {
+    secondaryResourcesContent.innerHTML = html;
+    secondaryResourcesRenderCache = html;
+  }
 }
 
 function refreshShellPanels() {
@@ -235,8 +273,7 @@ controlContent.addEventListener("click", event => {
   if (!button || !state.controls.backupGeneratorUnlocked) return;
 
   state.controls.backupGeneratorOn = !state.controls.backupGeneratorOn;
-  state.secondaryResources.hydrazineTrend = state.controls.backupGeneratorOn ? "DECREASING" : "STABLE";
-  state.status.backupPower = state.controls.backupGeneratorOn ? "ONLINE" : "STOPPED";
+  syncDerivedState();
   addLogEntry(`Backup generator switched ${state.controls.backupGeneratorOn ? "on" : "off"}.`);
 
   if (!state.controls.backupGeneratorOn && state.powerGeneration <= 0 && state.powerStorage <= 0) {
