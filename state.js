@@ -65,17 +65,13 @@ const state = {
   status: {
     operatingSystem: "ONLINE",
     systemIntegrity: 0,
-
     primaryPowerCondition: "DAMAGED",
     primaryPowerDiagnostics: "UNAVAILABLE",
-
     backupPower: "STOPPED",
     emergencyPower: "ONLINE",
-
     memoryIntegrity: 5,
     storageRecovered: 2,
     archive01: "CORRUPTED",
-
     sensors: "DETECTED",
     manipulators: "DETECTED",
     communications: "DETECTED",
@@ -93,14 +89,11 @@ const state = {
   statusRevealed: {
     operatingSystem: false,
     systemIntegrity: false,
-
     primaryPower: false,
     backupPower: false,
     emergencyPower: false,
-
     storageRecovered: false,
     archive01: false,
-
     sensors: false,
     manipulators: false,
     communications: false,
@@ -123,7 +116,48 @@ const state = {
 
 const INITIAL_STATE = JSON.parse(JSON.stringify(state));
 
+function syncDerivedState() {
+  const systemKnown = Boolean(state.progression.systemDiagnosticsComplete);
+  const memoryKnown = Boolean(state.diagnostics.memory);
+  const powerKnown = Boolean(state.diagnostics.power);
+  const ioKnown = Boolean(state.diagnostics.io);
+  const allDiagnosticsKnown = memoryKnown && powerKnown && ioKnown;
+
+  if (!state.actions.backupRestarted) state.controls.backupGeneratorOn = false;
+
+  state.progression.taskbarUnlocked = Boolean(systemKnown || state.runningTasks.length);
+  state.progression.navigationUnlocked = Boolean(state.progression.firstResetSeen);
+  state.progression.controlPanelUnlocked = powerKnown;
+  state.progression.secondaryResourcesUnlocked = Boolean(state.actions.backupRestarted);
+  state.progression.processorArrayKnown = Boolean(state.actions.archive01Repaired);
+  state.controls.backupGeneratorUnlocked = Boolean(state.actions.backupRestarted);
+
+  state.revealed.systemTime = systemKnown;
+  state.revealed.powerGeneration = systemKnown;
+  state.revealed.processingPower = systemKnown;
+  state.revealed.memory = memoryKnown;
+  state.revealed.powerStorage = powerKnown;
+
+  state.statusRevealed.operatingSystem = systemKnown;
+  state.statusRevealed.emergencyPower = systemKnown;
+  state.statusRevealed.primaryPower = powerKnown;
+  state.statusRevealed.backupPower = powerKnown;
+  state.statusRevealed.storageRecovered = memoryKnown;
+  state.statusRevealed.archive01 = memoryKnown;
+  state.statusRevealed.sensors = ioKnown;
+  state.statusRevealed.manipulators = ioKnown;
+  state.statusRevealed.communications = ioKnown;
+  state.statusRevealed.unknownInterfaces = ioKnown;
+  state.statusRevealed.systemIntegrity = allDiagnosticsKnown;
+
+  state.secondaryResources.hydrazineTrend = state.controls.backupGeneratorOn ? "DECREASING" : "STABLE";
+  state.status.memoryIntegrity = state.memoryMax > 0 ? Math.round((state.memory / state.memoryMax) * 100) : 0;
+  state.status.archive01 = state.actions.archive01Repaired ? "RECOVERED" : "CORRUPTED";
+  state.status.backupPower = state.actions.backupRestarted && state.controls.backupGeneratorOn ? "ONLINE" : "STOPPED";
+}
+
 function resetStateToDefaults() {
   for (const key of Object.keys(state)) delete state[key];
   Object.assign(state, JSON.parse(JSON.stringify(INITIAL_STATE)));
+  syncDerivedState();
 }
