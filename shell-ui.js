@@ -200,24 +200,11 @@ function renderControlPanel() {
   const visible = Boolean(state.progression.controlPanelUnlocked);
   controlPanel.classList.toggle("hidden", !visible);
   const locked = !state.controls.backupGeneratorUnlocked;
-  const on = Boolean(state.controls.backupGeneratorOn);
-  const signature = `${visible}:${locked}:${on}`;
+  const signature = `${visible}:${locked}:${state.controls.backupGeneratorOn}`;
   if (signature === controlRenderCache) return;
 
-  const switchState = locked ? "LOCKED" : on ? "ON" : "OFF";
   controlContent.innerHTML = visible
-    ? `<div class="control-unit">
-        <div class="control-label">BACKUP GENERATOR</div>
-        <button type="button" class="power-switch ${on ? "on" : "off"} ${locked ? "locked" : ""}" data-control="backup" aria-pressed="${on}" aria-label="Backup generator: ${switchState}" ${locked ? "disabled" : ""}>
-          <span class="switch-plate" aria-hidden="true">
-            <span class="switch-label switch-label-on">ON</span>
-            <span class="switch-slot"></span>
-            <span class="switch-handle"><span class="switch-grip"></span></span>
-            <span class="switch-label switch-label-off">OFF</span>
-          </span>
-          <span class="switch-state">${switchState}</span>
-        </button>
-      </div>`
+    ? `<div class="control-unit"><div class="control-label">BACKUP GENERATOR</div><button type="button" class="power-switch ${state.controls.backupGeneratorOn ? "on" : "off"} ${locked ? "locked" : ""}" data-control="backup" ${locked ? "disabled" : ""}><span class="switch-lever"></span><span class="switch-state">${locked ? "LOCKED" : state.controls.backupGeneratorOn ? "ON" : "OFF"}</span></button></div>`
     : "";
   controlRenderCache = signature;
 }
