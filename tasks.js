@@ -11,15 +11,17 @@ const TASK_DEFINITIONS = {
 };
 
 function taskByKey(key) {
-  return (state.runningTasks || []).find(task => task.key === key);
+  return state.runningTasks.find(task => task.key === key);
 }
 
 function getTotalGeneration() {
-  return Math.max(0, Number(state.powerGeneration || 0)) + (state.controls?.backupGeneratorOn ? GAME_CONFIG.backupGeneration : 0);
+  const external = Math.max(0, Number(state.powerGeneration || 0));
+  const backup = state.controls.backupGeneratorOn ? GAME_CONFIG.backupGeneration : 0;
+  return external + backup;
 }
 
 function getReservedPower() {
-  return (state.runningTasks || [])
+  return state.runningTasks
     .filter(task => task.status === "RUNNING")
     .reduce((sum, task) => sum + Number(task.power || 0), 0);
 }
@@ -29,7 +31,7 @@ function getAvailableGeneration() {
 }
 
 function canReservePower(amount, excludeTaskId = null) {
-  const reserved = (state.runningTasks || [])
+  const reserved = state.runningTasks
     .filter(task => task.status === "RUNNING" && task.id !== excludeTaskId)
     .reduce((sum, task) => sum + Number(task.power || 0), 0);
   return getTotalGeneration() - reserved >= Number(amount || 0);
@@ -40,7 +42,7 @@ function startTask(key) {
   if (!definition || taskByKey(key) || state.isShuttingDown) return false;
   if (!canReservePower(definition.power)) return false;
 
-  const task = {
+  state.runningTasks.push({
     id: `${key}:${Date.now()}:${Math.random().toString(36).slice(2, 7)}`,
     key,
     label: definition.label,
@@ -49,45 +51,47 @@ function startTask(key) {
     power: definition.power,
     status: "RUNNING",
     review: Boolean(definition.review)
-  };
+  });
 
   state.progression.taskbarUnlocked = true;
-  state.runningTasks.push(task);
   startRuntimeClock();
   addLogEntry(`Started ${definition.label.toLowerCase()}.`);
-  updateResources();
-  updateTaskBar();
-  updateButtons();
+  refreshDynamicUi();
   saveGame();
   return true;
 }
 
 function pauseTasksForPower() {
-  const running = (state.runningTasks || []).filter(task => task.status === "RUNNING");
+  const running = state.runningTasks.filter(task => task.status === "RUNNING");
   let reserved = running.reduce((sum, task) => sum + Number(task.power || 0), 0);
   const totalGeneration = getTotalGeneration();
+  let changed = false;
 
+  // Pause newest work first when generation can no longer support everything.
   for (let i = running.length - 1; i >= 0 && reserved > totalGeneration; i--) {
     const task = running[i];
     task.status = "PAUSED";
     reserved -= Number(task.power || 0);
+    changed = true;
     addLogEntry(`${task.label} paused: insufficient power.`);
   }
+  return changed;
 }
 
 function resumePausedTasks() {
   let changed = false;
-  for (const task of state.runningTasks || []) {
+  for (const task of state.runningTasks) {
     if (task.status !== "PAUSED") continue;
     if (!canReservePower(task.power, task.id)) continue;
     task.status = "RUNNING";
     changed = true;
     addLogEntry(`${task.label} resumed.`);
   }
-  if (changed) saveGame();
-  updateResources();
-  updateTaskBar();
-  updateButtons();
+  return changed;
+}
+
+function removeTask(taskId) {
+  state.runningTasks = state.runningTasks.filter(task => task.id !== taskId);
 }
 
 function finishTask(task) {
@@ -98,32 +102,25 @@ function finishTask(task) {
     task.status = "REVIEW";
     addLogEntry(`${task.label} complete. Report available.`);
   } else {
-    applyTaskResult(task.key);
+    applyTaskResult(task.key, true);
     removeTask(task.id);
   }
 
   resumePausedTasks();
-  updateResources();
-  updateTaskBar();
-  updateButtons();
+  refreshGameUi();
   saveGame();
 }
 
-function removeTask(taskId) {
-  state.runningTasks = (state.runningTasks || []).filter(task => task.id !== taskId);
-}
-
 function reviewTask(taskId) {
-  const task = (state.runningTasks || []).find(item => item.id === taskId && item.status === "REVIEW");
+  const task = state.runningTasks.find(item => item.id === taskId && item.status === "REVIEW");
   if (!task) return;
 
   const reportKey = task.key;
+  state.ui.currentView = "MAIN";
   applyTaskResult(reportKey, false);
   removeTask(task.id);
   resumePausedTasks();
-  updateResources();
-  updateTaskBar();
-  updateButtons();
+  refreshGameUi();
   saveGame();
 
   if (REPORTS[reportKey]) void renderReport(reportKey, true);
@@ -133,16 +130,11 @@ function tickTasks(deltaSeconds = 1) {
   pauseTasksForPower();
 
   const completed = [];
-  for (const task of state.runningTasks || []) {
+  for (const task of state.runningTasks) {
     if (task.status !== "RUNNING") continue;
     task.remainingSeconds = Math.max(0, Number(task.remainingSeconds || 0) - deltaSeconds);
     if (task.remainingSeconds <= 0) completed.push(task);
   }
 
   for (const task of completed) finishTask(task);
-  if (!completed.length) {
-    updateResources();
-    updateTaskBar();
-    updateButtons();
-  }
 }
