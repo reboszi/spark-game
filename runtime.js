@@ -1,4 +1,5 @@
 let runtimeClockTimer = null;
+let runtimeLastTickAt = null;
 
 function formatSystemTime(totalSeconds) {
   const seconds = Math.max(0, Math.floor(totalSeconds || 0));
@@ -21,12 +22,12 @@ function resetSystemResetCountdown() {
   updateTaskBar();
 }
 
-function tickBackupFuel() {
+function tickBackupFuel(deltaSeconds) {
   if (!state.controls?.backupGeneratorOn) return;
-  state.secondaryResources.hydrazineBurnSeconds += 1;
+  state.secondaryResources.hydrazineBurnSeconds += deltaSeconds;
   if (state.secondaryResources.hydrazineBurnSeconds < GAME_CONFIG.hydrazineBurnIntervalSeconds) return;
 
-  state.secondaryResources.hydrazineBurnSeconds = 0;
+  state.secondaryResources.hydrazineBurnSeconds -= GAME_CONFIG.hydrazineBurnIntervalSeconds;
   state.secondaryResources.hydrazineReserveHidden = Math.max(0, state.secondaryResources.hydrazineReserveHidden - 1);
 
   if (state.secondaryResources.hydrazineReserveHidden <= 0) {
@@ -35,29 +36,35 @@ function tickBackupFuel() {
     addLogEntry("Backup generator stopped: hydrazine depleted.");
     refreshShellPanels();
     updateSystemStatus();
+    pauseTasksForPower();
     if (state.powerGeneration <= 0 && state.powerStorage <= 0) void shutdownSystem();
   }
 }
 
 function startRuntimeClock() {
   if (runtimeClockTimer) return;
+  runtimeLastTickAt = performance.now();
 
   runtimeClockTimer = setInterval(() => {
-    if (state.revealed.systemTime) state.systemTimeSeconds += 1;
+    const now = performance.now();
+    const deltaSeconds = Math.min(0.25, Math.max(0, (now - runtimeLastTickAt) / 1000));
+    runtimeLastTickAt = now;
 
-    if (!state.isShuttingDown && getTotalGeneration() > 0) {
-      if (state.revealed.systemTime) state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - 1);
-      tickBackupFuel();
-      tickTasks();
+    if (state.revealed.systemTime) state.systemTimeSeconds += deltaSeconds;
+
+    if (!state.isShuttingDown) {
+      tickBackupFuel(deltaSeconds);
+      tickTasks(deltaSeconds);
     }
 
     updateResources();
     updateTaskBar();
-  }, 1000);
+  }, 100);
 }
 
 function stopRuntimeClock() {
   if (!runtimeClockTimer) return;
   clearInterval(runtimeClockTimer);
   runtimeClockTimer = null;
+  runtimeLastTickAt = null;
 }
