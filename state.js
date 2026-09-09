@@ -5,7 +5,8 @@ const GAME_CONFIG = {
   backupGeneration: 4,
   hydrazineBurnIntervalSeconds: 60,
   runtimeTickMs: 100,
-  autosaveIntervalSeconds: 5
+  autosaveIntervalSeconds: 5,
+  maxActiveTickGapSeconds: 2
 };
 
 const state = {
