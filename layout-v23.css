@@ -15,6 +15,15 @@
   grid-column: 2;
   grid-row: 1;
   min-height: 0;
+  height: 100%;
+  align-self: stretch;
+}
+
+.center-workspace .main-area {
+  min-height: 0;
+  height: 100%;
+  flex: 1 1 auto;
+  justify-content: center;
 }
 
 .secondary-resources-panel {
@@ -34,20 +43,23 @@
 .action-area {
   grid-column: 1 / -1;
   grid-row: 2;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  display: block;
   width: 100%;
   padding-top: 12px;
 }
 
 .action-area .action-panel {
-  margin-top: 0;
+  margin-top: 10px;
   width: 100%;
+}
+
+.action-area .action-panel:first-child {
+  margin-top: 0;
 }
 
 .action-area .action-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
 }
 
 .running-tasks-bar {
@@ -123,10 +135,6 @@
     height: auto;
   }
 
-  .action-area {
-    display: block;
-  }
-
   .action-area .action-panel {
     margin-top: 12px;
   }
@@ -135,5 +143,11 @@
     flex-basis: 170px;
     min-width: 170px;
     max-width: 170px;
+  }
+}
+
+@media (max-width:600px) {
+  .action-area .action-grid {
+    grid-template-columns: 1fr;
   }
 }
