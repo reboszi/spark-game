@@ -24,18 +24,13 @@ function mergeState(target, source) {
 
 function canonicalStateSnapshot() {
   const snapshot = JSON.parse(JSON.stringify(state));
-
-  // Runtime/transient state is never persisted.
   delete snapshot.isBusy;
   delete snapshot.isShuttingDown;
-
-  // Derived values are reconstructed from canonical state/config.
   delete snapshot.powerGenerationMax;
   if (snapshot.status) {
     delete snapshot.status.systemIntegrity;
     delete snapshot.status.memoryIntegrity;
   }
-
   return snapshot;
 }
 
@@ -86,6 +81,7 @@ function buildSavePayload() {
 
 function saveGame() {
   if (!state.progression.hasBooted) return;
+  if (typeof debugSessionActive !== "undefined" && debugSessionActive) return;
   localStorage.setItem(SAVE_KEY, JSON.stringify(buildSavePayload()));
 }
 
@@ -95,7 +91,6 @@ function importStatePayload(payload) {
   resetStateToDefaults();
   mergeState(state, payload.state);
 
-  // Legacy saves stored the Main Screen as HTML. Convert it once to a report id.
   if (!state.ui?.currentReportKey && payload.mainScreenHtml) {
     state.ui.currentReportKey = inferReportKeyFromLegacyHtml(payload.mainScreenHtml);
   }
@@ -111,8 +106,6 @@ function loadSaveGame() {
   try {
     const payload = JSON.parse(raw);
     if (!importStatePayload(payload)) return false;
-
-    // Any legacy/older payload is immediately rewritten in canonical v6 form.
     if (payload.version !== SAVE_VERSION || payload.mainScreenHtml !== undefined) {
       localStorage.setItem(SAVE_KEY, JSON.stringify(buildSavePayload()));
     }
