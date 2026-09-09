@@ -36,7 +36,7 @@ function saveGame() {
   savedState.isShuttingDown = false;
 
   const payload = {
-    version: 4,
+    version: 5,
     savedAt: Date.now(),
     state: savedState,
     mainScreenHtml: terminal.innerHTML
@@ -73,8 +73,23 @@ function loadSaveGame() {
     }
 
     for (const task of state.runningTasks || []) {
+      const definition = TASK_DEFINITIONS[task.key];
+      if (!definition) continue;
+
       if (!task.durationSeconds) {
-        task.durationSeconds = TASK_DEFINITIONS[task.key]?.duration || Math.max(1, Number(task.remainingSeconds || 1));
+        task.durationSeconds = definition.duration || Math.max(1, Number(task.remainingSeconds || 1));
+        migrated = true;
+      }
+
+      const shouldReview = Boolean(definition.review);
+      if (task.review !== shouldReview) {
+        task.review = shouldReview;
+        migrated = true;
+      }
+
+      if (shouldReview && Number(task.remainingSeconds || 0) <= 0 && task.status !== "REVIEW") {
+        task.remainingSeconds = 0;
+        task.status = "REVIEW";
         migrated = true;
       }
     }
@@ -116,7 +131,7 @@ function loadSaveGame() {
     }
 
     if (migrated) {
-      payload.version = 4;
+      payload.version = 5;
       payload.state = JSON.parse(JSON.stringify(state));
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     }
