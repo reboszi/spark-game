@@ -9,6 +9,7 @@ const GAME_CONFIG = {
 const state = {
   powerGeneration: GAME_CONFIG.generationStart,
   powerGenerationMax: GAME_CONFIG.generationStart,
+  powerGenerationTickProgressSeconds: 0,
   powerStorage: 0,
   powerStorageMax: 0,
 
@@ -19,8 +20,9 @@ const state = {
   processingPowerMax: 16,
 
   systemTimeSeconds: 0,
-  accumulatedTimeSeconds: 0,
   resetCountdownSeconds: Math.round((GAME_CONFIG.generationStart * GAME_CONFIG.generationTickMs) / 1000),
+  accumulatedTimeSeconds: 0,
+  lastSeenAt: Date.now(),
 
   isBusy: false,
   isShuttingDown: false,
@@ -57,7 +59,8 @@ const state = {
   secondaryResources: {
     hydrazineKnown: false,
     hydrazineReserveHidden: 100,
-    hydrazineBurnSeconds: 0
+    hydrazineBurnSeconds: 0,
+    hydrazineTrend: "STABLE"
   },
 
   status: {
