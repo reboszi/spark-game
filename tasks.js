@@ -94,8 +94,8 @@ function removeTask(taskId) {
   state.runningTasks = state.runningTasks.filter(task => task.id !== taskId);
 }
 
-function finishTask(task) {
-  if (!task) return;
+function finishTask(task, { refresh = true, persist = true } = {}) {
+  if (!task) return false;
   task.remainingSeconds = 0;
 
   if (task.review) {
@@ -107,8 +107,9 @@ function finishTask(task) {
   }
 
   resumePausedTasks();
-  refreshGameUi();
-  saveGame();
+  if (refresh) refreshGameUi();
+  if (persist) saveGame();
+  return true;
 }
 
 function reviewTask(taskId) {
@@ -136,5 +137,11 @@ function tickTasks(deltaSeconds = 1) {
     if (task.remainingSeconds <= 0) completed.push(task);
   }
 
-  for (const task of completed) finishTask(task);
+  if (!completed.length) return;
+
+  for (const task of completed) {
+    finishTask(task, { refresh: false, persist: false });
+  }
+  refreshGameUi();
+  saveGame();
 }
