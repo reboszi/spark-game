@@ -24,6 +24,10 @@ const state = {
   isBusy: false,
   isShuttingDown: false,
 
+  ui: {
+    currentReportKey: null
+  },
+
   progression: {
     hasBooted: false,
     systemDiagnosticsComplete: false,
@@ -117,3 +121,10 @@ const state = {
     primaryPowerRepaired: false
   }
 };
+
+const INITIAL_STATE = JSON.parse(JSON.stringify(state));
+
+function resetStateToDefaults() {
+  for (const key of Object.keys(state)) delete state[key];
+  Object.assign(state, JSON.parse(JSON.stringify(INITIAL_STATE)));
+}
