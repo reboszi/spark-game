@@ -100,6 +100,10 @@ function beginBackgroundPause() {
   backgroundPauseStartedAt = Date.now();
   stopRuntimeClock();
   if (typeof stopPowerCycle === "function") stopPowerCycle();
+  if (typeof externalRecoveryTimer !== "undefined" && externalRecoveryTimer) {
+    clearTimeout(externalRecoveryTimer);
+    externalRecoveryTimer = null;
+  }
   if (typeof saveGame === "function") saveGame();
 }
 
@@ -112,6 +116,9 @@ function endBackgroundPause() {
 
   if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) startRuntimeClock();
   if (state.progression.systemDiagnosticsComplete && typeof startPowerCycle === "function") startPowerCycle();
+  if (state.powerGeneration <= 0 && (state.controls?.backupGeneratorOn || state.powerStorage > 0) && typeof scheduleExternalGenerationRestore === "function") {
+    scheduleExternalGenerationRestore();
+  }
   updateResources();
   updateTaskBar();
   if (typeof updateDebugPanel === "function") updateDebugPanel();
@@ -124,7 +131,5 @@ document.addEventListener("visibilitychange", () => {
 });
 
 window.addEventListener("pagehide", () => {
-  if (!document.hidden) {
-    if (typeof saveGame === "function") saveGame();
-  }
+  if (!document.hidden && typeof saveGame === "function") saveGame();
 });
