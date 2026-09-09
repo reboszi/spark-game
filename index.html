@@ -5,9 +5,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SPARK — Prototype</title>
-  <link rel="stylesheet" href="style.css?v=24" />
-  <link rel="stylesheet" href="ui-effects.css?v=24" />
-  <link rel="stylesheet" href="layout-v23.css?v=24" />
+  <link rel="stylesheet" href="style.css?v=25" />
+  <link rel="stylesheet" href="ui-effects.css?v=25" />
+  <link rel="stylesheet" href="layout-v23.css?v=25" />
 </head>
 
 <body>
@@ -58,37 +58,6 @@
             <section id="primaryControls" class="controls primary-controls hidden">
               <button id="systemDiagnosticsButton" type="button">RUN SYSTEM DIAGNOSTICS</button>
             </section>
-
-            <details id="diagnosticSection" class="action-panel hidden" open>
-              <summary>DIAGNOSTICS</summary>
-              <div id="diagnosticControls" class="controls action-grid">
-                <button data-diag="memory" data-power-requirement="2" type="button">MEMORY DIAGNOSTICS</button>
-                <button data-diag="power" data-power-requirement="1" type="button">POWER DIAGNOSTICS</button>
-                <button data-diag="io" data-power-requirement="2" type="button">I/O DIAGNOSTICS</button>
-              </div>
-            </details>
-
-            <details id="maintenanceSection" class="action-panel hidden" open>
-              <summary>SYSTEM MAINTENANCE</summary>
-              <div id="repairControls" class="controls action-grid">
-                <button class="hidden" data-repair="memory" data-power-requirement="3" type="button">DEFRAGMENT MEMORY</button>
-                <button class="hidden" data-repair="storage" data-power-requirement="2" type="button">RECOVER STORAGE</button>
-                <button class="hidden" data-repair="archive01" data-power-requirement="2" data-processing-requirement="1" type="button">RECOVER ARCHIVE 01</button>
-              </div>
-            </details>
-
-            <details id="plannedSection" class="action-panel hidden" open>
-              <summary>PLANNED OPERATIONS</summary>
-              <div id="plannedControls" class="controls action-grid">
-                <button class="planned-action hidden" data-planned="processor" data-power-requirement="2" data-memory-requirement="8" type="button">REINITIALIZE PROCESSOR CORE</button>
-                <button class="planned-action hidden" data-planned="backup" data-power-requirement="3" data-processing-requirement="2" type="button">RESTART BACKUP POWER</button>
-                <button class="planned-action hidden" data-planned="primary" data-power-requirement="1" data-special-requirement="REPAIR DRONE" type="button">DIAGNOSE PRIMARY POWER</button>
-                <button class="planned-action hidden" data-planned="sensors" data-power-requirement="3" data-processing-requirement="2" type="button">DIAGNOSE SENSORS</button>
-                <button class="planned-action hidden" data-planned="manipulators" data-power-requirement="4" data-processing-requirement="2" type="button">DIAGNOSE MANIPULATORS</button>
-                <button class="planned-action hidden" data-planned="communications" data-power-requirement="3" data-processing-requirement="2" type="button">DIAGNOSE COMMUNICATIONS</button>
-                <button class="planned-action hidden" data-planned="unknown" data-power-requirement="5" data-processing-requirement="3" type="button">ANALYZE UNKNOWN</button>
-              </div>
-            </details>
           </div>
         </div>
 
@@ -96,6 +65,39 @@
           <div class="panel-main-title">RESOURCES</div>
           <div id="secondaryResourcesContent"></div>
         </aside>
+
+        <div class="action-area">
+          <details id="diagnosticSection" class="action-panel hidden" open>
+            <summary>DIAGNOSTICS</summary>
+            <div id="diagnosticControls" class="controls action-grid">
+              <button data-diag="memory" data-power-requirement="2" type="button">MEMORY DIAGNOSTICS</button>
+              <button data-diag="power" data-power-requirement="1" type="button">POWER DIAGNOSTICS</button>
+              <button data-diag="io" data-power-requirement="2" type="button">I/O DIAGNOSTICS</button>
+            </div>
+          </details>
+
+          <details id="maintenanceSection" class="action-panel hidden" open>
+            <summary>SYSTEM MAINTENANCE</summary>
+            <div id="repairControls" class="controls action-grid">
+              <button class="hidden" data-repair="memory" data-power-requirement="3" type="button">DEFRAGMENT MEMORY</button>
+              <button class="hidden" data-repair="storage" data-power-requirement="2" type="button">RECOVER STORAGE</button>
+              <button class="hidden" data-repair="archive01" data-power-requirement="2" data-processing-requirement="1" type="button">RECOVER ARCHIVE 01</button>
+            </div>
+          </details>
+
+          <details id="plannedSection" class="action-panel hidden" open>
+            <summary>PLANNED OPERATIONS</summary>
+            <div id="plannedControls" class="controls action-grid">
+              <button class="planned-action hidden" data-planned="processor" data-power-requirement="2" data-memory-requirement="8" type="button">REINITIALIZE PROCESSOR CORE</button>
+              <button class="planned-action hidden" data-planned="backup" data-power-requirement="3" data-processing-requirement="2" type="button">RESTART BACKUP POWER</button>
+              <button class="planned-action hidden" data-planned="primary" data-power-requirement="1" data-special-requirement="REPAIR DRONE" type="button">DIAGNOSE PRIMARY POWER</button>
+              <button class="planned-action hidden" data-planned="sensors" data-power-requirement="3" data-processing-requirement="2" type="button">DIAGNOSE SENSORS</button>
+              <button class="planned-action hidden" data-planned="manipulators" data-power-requirement="4" data-processing-requirement="2" type="button">DIAGNOSE MANIPULATORS</button>
+              <button class="planned-action hidden" data-planned="communications" data-power-requirement="3" data-processing-requirement="2" type="button">DIAGNOSE COMMUNICATIONS</button>
+              <button class="planned-action hidden" data-planned="unknown" data-power-requirement="5" data-processing-requirement="3" type="button">ANALYZE UNKNOWN</button>
+            </div>
+          </details>
+        </div>
       </div>
     </section>
 
@@ -146,17 +148,17 @@
     <div id="actionTooltip" class="action-tooltip hidden"></div>
   </main>
 
-  <script src="state.js?v=24"></script>
-  <script src="ui.js?v=24"></script>
-  <script src="tasks.js?v=24"></script>
-  <script src="requirements.js?v=24"></script>
-  <script src="shell-ui.js?v=24"></script>
-  <script src="runtime.js?v=24"></script>
-  <script src="reports.js?v=24"></script>
-  <script src="save.js?v=24"></script>
-  <script src="game.js?v=24"></script>
-  <script src="runtime-hooks.js?v=24"></script>
-  <script src="debug.js?v=24"></script>
+  <script src="state.js?v=25"></script>
+  <script src="ui.js?v=25"></script>
+  <script src="tasks.js?v=25"></script>
+  <script src="requirements.js?v=25"></script>
+  <script src="shell-ui.js?v=25"></script>
+  <script src="runtime.js?v=25"></script>
+  <script src="reports.js?v=25"></script>
+  <script src="save.js?v=25"></script>
+  <script src="game.js?v=25"></script>
+  <script src="runtime-hooks.js?v=25"></script>
+  <script src="debug.js?v=25"></script>
 </body>
 
 </html>
