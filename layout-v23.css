@@ -1,20 +1,53 @@
 .workspace {
+  min-height: calc(100vh - var(--top-shell-height));
+  display: grid;
   grid-template-columns: minmax(180px, 1fr) minmax(560px, 820px) minmax(180px, 1fr);
-  align-items: center;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: stretch;
+}
+
+.control-panel {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.center-workspace {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 0;
+}
+
+.secondary-resources-panel {
+  grid-column: 3;
+  grid-row: 1;
 }
 
 .inner-panel {
   width: 100%;
   min-width: 0;
-  min-height: 260px;
-  height: auto;
-  align-self: center;
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
   margin: 0;
 }
 
-.control-panel,
-.secondary-resources-panel {
-  display: block;
+.action-area {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  padding-top: 12px;
+}
+
+.action-area .action-panel {
+  margin-top: 0;
+  width: 100%;
+}
+
+.action-area .action-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .running-tasks-bar {
@@ -22,12 +55,15 @@
 }
 
 .running-tasks-bar .taskbar-item {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 190px;
+  min-width: 190px;
+  max-width: 190px;
 }
 
 .running-tasks-bar .taskbar-reset {
-  flex: .75 1 0;
+  flex: 0 0 auto;
+  min-width: auto;
+  max-width: none;
 }
 
 .running-tasks-bar .taskbar-divider {
@@ -35,8 +71,8 @@
 }
 
 .running-tasks-bar .taskbar-empty {
-  flex: 1 1 auto;
-  width: 100%;
+  flex: 0 0 auto;
+  width: auto;
 }
 
 .secondary-resource-row {
@@ -84,9 +120,20 @@
 
   .inner-panel {
     width: 100%;
+    height: auto;
+  }
+
+  .action-area {
+    display: block;
+  }
+
+  .action-area .action-panel {
+    margin-top: 12px;
   }
 
   .running-tasks-bar .taskbar-item {
-    min-width: 150px;
+    flex-basis: 170px;
+    min-width: 170px;
+    max-width: 170px;
   }
 }
