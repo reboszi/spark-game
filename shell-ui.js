@@ -27,8 +27,10 @@ function updateResources() {
     const available = getAvailableGeneration();
     const active = req !== null;
     const ok = !active || available >= req;
-    const displayScale = Math.max(1, GAME_CONFIG.generationStart + GAME_CONFIG.backupGeneration);
-    html += resourceCard("⚡", "POWER GENERATION", `${available}`, available, displayScale, `resource-power-generation ${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
+    const displayScale = state.actions.backupRestarted
+      ? GAME_CONFIG.generationStart + GAME_CONFIG.backupGeneration
+      : GAME_CONFIG.generationStart;
+    html += resourceCard("⚡", "POWER GENERATION", `${available}`, available, Math.max(1, displayScale), `resource-power-generation ${active ? "requirement-active" : ""} ${ok ? "" : "requirement-insufficient"}`);
   }
 
   if (state.revealed.powerStorage) html += resourceCard("🔋", "POWER STORAGE", `${state.powerStorage} / ${state.powerStorageMax}`, state.powerStorage, state.powerStorageMax, "resource-power-storage");
