@@ -5,9 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SPARK — Prototype</title>
-  <link rel="stylesheet" href="style.css?v=27" />
-  <link rel="stylesheet" href="ui-effects.css?v=27" />
-  <link rel="stylesheet" href="layout-v23.css?v=27" />
+  <link rel="stylesheet" href="style.css?v=28" />
 </head>
 
 <body>
@@ -55,7 +53,7 @@
               <div id="terminalOutput" aria-live="polite"></div>
             </div>
 
-            <section id="primaryControls" class="controls primary-controls hidden">
+            <section id="primaryControls" class="primary-controls hidden">
               <button id="systemDiagnosticsButton" type="button">Run system diagnostics</button>
             </section>
           </div>
@@ -121,7 +119,7 @@
 
       <div class="debug-section">
         <div class="debug-title">TIME / POWER</div>
-        <div class="debug-grid compact">
+        <div class="debug-grid">
           <button data-debug-advance="10">+10 SEC</button>
           <button data-debug-advance="60">+60 SEC</button>
           <button data-debug-force-loss>FORCE POWER LOSS</button>
@@ -137,7 +135,7 @@
 
       <div class="debug-section">
         <div class="debug-title">SAVE / SNAPSHOT</div>
-        <div class="debug-grid compact">
+        <div class="debug-grid">
           <button data-debug-export>EXPORT SNAPSHOT</button>
           <button data-debug-import>IMPORT SNAPSHOT</button>
           <button data-debug-delete-save>DELETE PLAYER SAVE</button>
@@ -148,17 +146,16 @@
     <div id="actionTooltip" class="action-tooltip hidden"></div>
   </main>
 
-  <script src="state.js?v=27"></script>
-  <script src="ui.js?v=27"></script>
-  <script src="tasks.js?v=27"></script>
-  <script src="requirements.js?v=27"></script>
-  <script src="shell-ui.js?v=27"></script>
-  <script src="runtime.js?v=27"></script>
-  <script src="reports.js?v=27"></script>
-  <script src="save.js?v=27"></script>
-  <script src="game.js?v=27"></script>
-  <script src="runtime-hooks.js?v=27"></script>
-  <script src="debug.js?v=27"></script>
+  <script src="state.js?v=28"></script>
+  <script src="ui.js?v=28"></script>
+  <script src="reports.js?v=28"></script>
+  <script src="tasks.js?v=28"></script>
+  <script src="requirements.js?v=28"></script>
+  <script src="shell-ui.js?v=28"></script>
+  <script src="runtime.js?v=28"></script>
+  <script src="save.js?v=28"></script>
+  <script src="game.js?v=28"></script>
+  <script src="debug.js?v=28"></script>
 </body>
 
 </html>
