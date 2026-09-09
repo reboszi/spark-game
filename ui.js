@@ -21,6 +21,8 @@ const systemDiagnosticsButton = document.getElementById("systemDiagnosticsButton
 const actionTooltip = document.getElementById("actionTooltip");
 
 let hoveredRequirements = { power: null, processing: null };
+let systemStatusRenderCache = null;
+let activityLogRenderCache = null;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function typeLine(text, cls = "", speed = 14) {
@@ -119,7 +121,11 @@ function updateSystemStatus() {
     state.statusRevealed.communications ? row("Communications", state.status.communications, getStatusClass(state.status.communications)) : ""
   ]);
 
-  statusContentEl.innerHTML = groups.join("");
+  const html = groups.join("");
+  if (html !== systemStatusRenderCache) {
+    statusContentEl.innerHTML = html;
+    systemStatusRenderCache = html;
+  }
   systemStatusEl.classList.toggle("hidden", groups.length === 0);
 }
 
@@ -130,11 +136,16 @@ function addLogEntry(text) {
 }
 
 function renderActivityLog() {
-  logContentEl.innerHTML = state.logEntries
+  const html = state.logEntries
     .map((entry, index) => `<div class="log-entry"><span class="log-index">${String(index + 1).padStart(2, "0")}</span>${entry}</div>`)
     .join("");
+
+  if (html !== activityLogRenderCache) {
+    logContentEl.innerHTML = html;
+    activityLogRenderCache = html;
+    activityLogEl.scrollTop = activityLogEl.scrollHeight;
+  }
   activityLogEl.classList.toggle("hidden", state.logEntries.length === 0);
-  activityLogEl.scrollTop = activityLogEl.scrollHeight;
 }
 
 function refreshDiagnosticButtons() {
