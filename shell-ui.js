@@ -278,10 +278,12 @@ controlContent.addEventListener("click", event => {
 
   if (!state.controls.backupGeneratorOn && state.powerGeneration <= 0 && state.powerStorage <= 0) {
     void shutdownSystem();
-  } else {
-    resumePausedTasks();
+    return;
   }
 
+  resumePausedTasks();
   refreshGameUi();
   saveGame();
 });
+
+updateWorkspaceLayout();
