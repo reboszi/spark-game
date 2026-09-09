@@ -158,11 +158,6 @@ function requirementRow(label, required, met) {
 }
 
 function refreshInterfaceFromState() {
-  refreshDiagnosticButtons();
-  refreshActionUnlocks();
-  updateSystemStatus();
-  renderActivityLog();
-  refreshShellPanels();
   primaryControls.classList.toggle("hidden", state.progression.systemDiagnosticsComplete);
-  updateButtons();
+  refreshGameUi();
 }
