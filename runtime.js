@@ -94,7 +94,10 @@ function tickExternalPower(deltaSeconds, allowShutdown = true) {
       }
       state.externalRecoverySecondsRemaining = Math.max(0, state.externalRecoverySecondsRemaining - deltaSeconds);
       if (state.externalRecoverySecondsRemaining <= 0) restoreExternalGenerationFromRuntime();
+      return;
     }
+
+    if (allowShutdown) void shutdownSystem();
     return;
   }
 
