@@ -5,9 +5,6 @@ const controlContent = document.getElementById("controlContent");
 const secondaryResourcesPanel = document.getElementById("secondaryResourcesPanel");
 const secondaryResourcesContent = document.getElementById("secondaryResourcesContent");
 
-let currentMainView = "MAIN";
-let cachedMainHtml = "";
-
 function systemTimeCard() {
   return `<div class="resource system-time-resource"><span class="resource-icon">◷</span><span class="resource-name">SYSTEM TIME</span><span class="resource-value">${formatSystemTime(state.systemTimeSeconds)}</span></div>`;
 }
@@ -86,12 +83,15 @@ function updateTaskBar() {
   runningTasksBar.innerHTML = items.join('<span class="taskbar-divider">|</span>');
   runningTasksBar.classList.toggle("hidden", !unlocked);
   systemScreen.classList.toggle("tasks-visible", unlocked);
+
+  if (typeof updateDebugPanel === "function") updateDebugPanel();
 }
 
 function renderNavigation() {
   navigationPanel.classList.toggle("hidden", !state.progression.navigationUnlocked);
   if (!state.progression.navigationUnlocked) return;
-  navigationPanel.innerHTML = `<button type="button" data-view="MAIN" class="nav-button ${currentMainView === "MAIN" ? "active" : ""}">MAIN</button><button type="button" data-view="TIMELINE" class="nav-button ${currentMainView === "TIMELINE" ? "active" : ""}">TIMELINE</button>`;
+  const currentView = state.ui.currentView || "MAIN";
+  navigationPanel.innerHTML = `<button type="button" data-view="MAIN" class="nav-button ${currentView === "MAIN" ? "active" : ""}">MAIN</button><button type="button" data-view="TIMELINE" class="nav-button ${currentView === "TIMELINE" ? "active" : ""}">TIMELINE</button>`;
 }
 
 function renderTimeline() {
@@ -99,14 +99,19 @@ function renderTimeline() {
   terminal.innerHTML = `<div class="timeline-title">SYSTEM TIMELINE</div>${entries.map(entry=>`<div class="timeline-row"><span>${formatSystemTime(entry.timeSeconds)}</span><span>${entry.text}</span></div>`).join("")}`;
 }
 
-function switchMainView(view) {
-  if (!state.progression.navigationUnlocked || view === currentMainView) return;
-  if (currentMainView === "MAIN") cachedMainHtml = terminal.innerHTML;
-  currentMainView = view;
-  if (view === "TIMELINE") renderTimeline();
-  if (view === "MAIN") terminal.innerHTML = cachedMainHtml || terminal.innerHTML;
+function applyCurrentView() {
+  const view = state.ui.currentView || "MAIN";
+  if (view === "TIMELINE" && state.progression.navigationUnlocked) renderTimeline();
+  else renderCurrentMainScreen();
   document.querySelectorAll(".action-panel, #primaryControls").forEach(el => el.classList.toggle("view-hidden", view !== "MAIN"));
   renderNavigation();
+}
+
+function switchMainView(view) {
+  if (!state.progression.navigationUnlocked || view === state.ui.currentView) return;
+  state.ui.currentView = view;
+  applyCurrentView();
+  saveGame();
 }
 
 function renderControlPanel() {
@@ -131,7 +136,10 @@ function refreshShellPanels() {
 
 runningTasksBar.addEventListener("click", event => {
   const reviewButton = event.target.closest("[data-review-task]");
-  if (reviewButton) reviewTask(reviewButton.dataset.reviewTask);
+  if (reviewButton) {
+    state.ui.currentView = "MAIN";
+    reviewTask(reviewButton.dataset.reviewTask);
+  }
 });
 
 navigationPanel.addEventListener("click", event => {
