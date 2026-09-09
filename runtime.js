@@ -1,5 +1,6 @@
 let runtimeClockTimer = null;
 let runtimeLastTickAt = null;
+let backgroundPauseStartedAt = null;
 
 function formatSystemTime(totalSeconds) {
   const seconds = Math.max(0, Math.floor(totalSeconds || 0));
@@ -15,6 +16,14 @@ function formatCountdown(totalSeconds) {
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
+function formatAccumulatedTime(totalSeconds) {
+  const seconds = Math.max(0, Math.floor(totalSeconds || 0));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
 function resetSystemResetCountdown() {
@@ -44,7 +53,7 @@ function tickBackupFuel(deltaSeconds) {
 
 function processRuntimeElapsed(deltaSeconds) {
   const delta = Math.max(0, Number(deltaSeconds || 0));
-  if (!delta) return;
+  if (!delta || document.hidden) return;
 
   if (state.revealed.systemTime) state.systemTimeSeconds += delta;
 
@@ -59,6 +68,7 @@ function processRuntimeElapsed(deltaSeconds) {
 }
 
 function runtimeTick() {
+  if (document.hidden) return;
   const now = Date.now();
   if (runtimeLastTickAt === null) runtimeLastTickAt = now;
   const deltaSeconds = Math.max(0, (now - runtimeLastTickAt) / 1000);
@@ -70,19 +80,51 @@ function runtimeTick() {
 }
 
 function startRuntimeClock() {
-  if (runtimeClockTimer) return;
+  if (runtimeClockTimer || document.hidden) return;
   runtimeLastTickAt = Date.now();
   runtimeClockTimer = setInterval(runtimeTick, 100);
 }
 
 function stopRuntimeClock() {
-  if (!runtimeClockTimer) return;
+  if (!runtimeClockTimer) {
+    runtimeLastTickAt = null;
+    return;
+  }
   clearInterval(runtimeClockTimer);
   runtimeClockTimer = null;
   runtimeLastTickAt = null;
 }
 
+function beginBackgroundPause() {
+  if (backgroundPauseStartedAt !== null) return;
+  backgroundPauseStartedAt = Date.now();
+  stopRuntimeClock();
+  if (typeof stopPowerCycle === "function") stopPowerCycle();
+  if (typeof saveGame === "function") saveGame();
+}
+
+function endBackgroundPause() {
+  if (backgroundPauseStartedAt !== null) {
+    const elapsed = Math.max(0, (Date.now() - backgroundPauseStartedAt) / 1000);
+    state.accumulatedTimeSeconds = Math.max(0, Number(state.accumulatedTimeSeconds || 0)) + elapsed;
+    backgroundPauseStartedAt = null;
+  }
+
+  if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) startRuntimeClock();
+  if (state.progression.systemDiagnosticsComplete && typeof startPowerCycle === "function") startPowerCycle();
+  updateResources();
+  updateTaskBar();
+  if (typeof updateDebugPanel === "function") updateDebugPanel();
+  if (typeof saveGame === "function") saveGame();
+}
+
 document.addEventListener("visibilitychange", () => {
-  if (!runtimeClockTimer || document.hidden) return;
-  runtimeTick();
+  if (document.hidden) beginBackgroundPause();
+  else endBackgroundPause();
+});
+
+window.addEventListener("pagehide", () => {
+  if (!document.hidden) {
+    if (typeof saveGame === "function") saveGame();
+  }
 });
