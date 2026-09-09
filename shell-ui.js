@@ -1,5 +1,7 @@
 const runningTasksBar = document.getElementById("runningTasksBar");
 const navigationPanel = document.getElementById("navigationPanel");
+const workspaceEl = document.getElementById("workspace");
+const actionArea = workspaceEl.querySelector(".action-area");
 const controlPanel = document.getElementById("controlPanel");
 const controlContent = document.getElementById("controlContent");
 const secondaryResourcesPanel = document.getElementById("secondaryResourcesPanel");
@@ -86,10 +88,7 @@ function updateTaskBar() {
     if (state.controls.backupGeneratorOn) {
       items.push(`<div class="taskbar-item taskbar-reset taskbar-stable"><span>SYSTEM RESET</span><strong>PREVENTED</strong></div>`);
     } else {
-      const countdown = typeof getExternalPowerCountdownSeconds === "function"
-        ? getExternalPowerCountdownSeconds()
-        : 0;
-      items.push(`<div class="taskbar-item taskbar-reset"><span>SYSTEM RESET</span><strong>${formatCountdown(countdown)}</strong></div>`);
+      items.push(`<div class="taskbar-item taskbar-reset"><span>SYSTEM RESET</span><strong>${formatCountdown(getExternalPowerCountdownSeconds())}</strong></div>`);
     }
   }
 
@@ -120,6 +119,18 @@ function renderTimeline() {
     .join("")}`;
 }
 
+function updateWorkspaceLayout() {
+  const controlVisible = !controlPanel.classList.contains("hidden");
+  const secondaryVisible = !secondaryResourcesPanel.classList.contains("hidden");
+  const mainView = (state.ui.currentView || "MAIN") === "MAIN";
+  const actionVisible = mainView && [...actionArea.querySelectorAll(".action-panel")]
+    .some(panel => !panel.classList.contains("hidden"));
+
+  workspaceEl.classList.toggle("control-collapsed", !controlVisible);
+  workspaceEl.classList.toggle("resources-collapsed", !secondaryVisible);
+  workspaceEl.classList.toggle("actions-collapsed", !actionVisible);
+}
+
 function applyCurrentView() {
   const view = state.ui.currentView || "MAIN";
   if (view === "TIMELINE" && state.progression.navigationUnlocked) renderTimeline();
@@ -128,6 +139,7 @@ function applyCurrentView() {
   document.querySelectorAll(".action-panel, #primaryControls")
     .forEach(el => el.classList.toggle("view-hidden", view !== "MAIN"));
   renderNavigation();
+  updateWorkspaceLayout();
 }
 
 function switchMainView(view) {
@@ -139,7 +151,10 @@ function switchMainView(view) {
 
 function renderControlPanel() {
   controlPanel.classList.toggle("hidden", !state.progression.controlPanelUnlocked);
-  if (!state.progression.controlPanelUnlocked) return;
+  if (!state.progression.controlPanelUnlocked) {
+    controlContent.innerHTML = "";
+    return;
+  }
 
   const locked = !state.controls.backupGeneratorUnlocked;
   controlContent.innerHTML = `
@@ -154,7 +169,10 @@ function renderControlPanel() {
 
 function renderSecondaryResources() {
   secondaryResourcesPanel.classList.toggle("hidden", !state.progression.secondaryResourcesUnlocked);
-  if (!state.progression.secondaryResourcesUnlocked) return;
+  if (!state.progression.secondaryResourcesUnlocked) {
+    secondaryResourcesContent.innerHTML = "";
+    return;
+  }
 
   const trend = state.secondaryResources.hydrazineTrend || "STABLE";
   const trendClass = trend === "INCREASING"
@@ -180,6 +198,7 @@ function refreshShellPanels() {
   renderNavigation();
   renderControlPanel();
   renderSecondaryResources();
+  updateWorkspaceLayout();
 }
 
 function refreshDynamicUi() {
