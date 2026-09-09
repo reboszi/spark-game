@@ -123,7 +123,7 @@ function beginDiagnostic(type, button) { if (!canRunProcess(button) || state.isS
 function beginRepair(type, button) { if (!canRunProcess(button) || state.isShuttingDown) return; const key=`repair:${type}`; if(startTask(key) && type!=="memory" && type!=="storage"){ clearReportForOperation(); void typeLine(`${TASK_DEFINITIONS[key].label} STARTED`,"status-line",10); } }
 function beginPlanned(type, button) { if (!canRunProcess(button) || state.isShuttingDown) return; const key=`planned:${type}`; if(TASK_DEFINITIONS[key] && startTask(key)){ clearReportForOperation(); void typeLine(`${TASK_DEFINITIONS[key].label} STARTED`,"status-line",10); } }
 
-function applyTaskResult(key) {
+function applyTaskResult(key, renderOutput = true) {
   if (REPORTS[key]) state.ui.currentReportKey = key;
 
   if (key === "system:diagnostics") {
@@ -131,37 +131,37 @@ function applyTaskResult(key) {
     state.statusRevealed.operatingSystem=true; state.statusRevealed.emergencyPower=true;
     if (!state.timelineEntries.length) addTimelineEntry("SYSTEM BOOT",0);
     addLogEntry("Ran system diagnostics."); addLogEntry("System clock initialized."); addLogEntry("Discovered emergency power generation."); addLogEntry("Detected primary and backup power faults.");
-    queueMainOutput(()=>renderReport(key,true));
+    if (renderOutput) queueMainOutput(()=>renderReport(key,true));
     primaryControls.classList.add("hidden"); startRuntimeClock(); startPowerCycle();
   }
   if (key === "diag:memory") {
     state.revealed.memory=true; state.status.memoryIntegrity=5; state.status.storageRecovered=2; state.statusRevealed.storageRecovered=true; state.statusRevealed.archive01=true; state.diagnostics.memory=true;
     addLogEntry("Ran memory diagnostics."); addLogEntry("Detected Corrupted Data Archive 01.");
-    queueMainOutput(()=>renderReport(key,true));
+    if (renderOutput) queueMainOutput(()=>renderReport(key,true));
   }
   if (key === "diag:power") {
     state.statusRevealed.primaryPower=true; state.statusRevealed.backupPower=true; state.statusRevealed.emergencyPower=true; state.revealed.powerStorage=true; state.diagnostics.power=true; state.progression.controlPanelUnlocked=true;
     addLogEntry("Ran power diagnostics."); addLogEntry("Primary power diagnostics require a repair drone."); addLogEntry("Backup generator identified as Hydrazine Thermal Cell.");
-    queueMainOutput(()=>renderReport(key,true));
+    if (renderOutput) queueMainOutput(()=>renderReport(key,true));
   }
   if (key === "diag:io") {
     state.statusRevealed.sensors=true; state.statusRevealed.manipulators=true; state.statusRevealed.communications=true; state.statusRevealed.unknownInterfaces=true; state.diagnostics.io=true;
-    addLogEntry("Ran I/O diagnostics."); queueMainOutput(()=>renderReport(key,true));
+    addLogEntry("Ran I/O diagnostics."); if (renderOutput) queueMainOutput(()=>renderReport(key,true));
   }
   if (key === "repair:memory") { const gained=3; state.memory=Math.min(state.memoryMax,state.memory+gained); updateMemoryIntegrity(); addLogEntry(`Defragmented memory: +${gained} usable memory.`); }
   if (key === "repair:storage") { const gained=2; state.status.storageRecovered=Math.min(100,state.status.storageRecovered+gained); addLogEntry(`Recovered storage blocks: +${gained}%.`); }
   if (key === "repair:archive01") {
     state.actions.archive01Repaired=true; state.status.archive01="RECOVERED"; state.progression.processorArrayKnown=true; addTimelineEntry("DATA ARCHIVE 01 RECOVERED"); addLogEntry("Recovered Data Archive 01.");
-    queueMainOutput(()=>renderReport(key,true));
+    if (renderOutput) queueMainOutput(()=>renderReport(key,true));
   }
   if (key === "planned:processor") {
     state.actions.processorCore02Online=true; state.processingPower=Math.min(state.processingPowerMax,state.processingPower+1); addTimelineEntry("PROCESSOR CORE 02 ONLINE"); addLogEntry("Processor Core 02 reinitialized.");
-    queueMainOutput(()=>renderReport(key,true));
+    if (renderOutput) queueMainOutput(()=>renderReport(key,true));
   }
   if (key === "planned:backup") {
     state.actions.backupRestarted=true; state.status.backupPower="ONLINE"; state.controls.backupGeneratorUnlocked=true; state.controls.backupGeneratorOn=true; state.progression.secondaryResourcesUnlocked=true;
     addTimelineEntry("BACKUP POWER RESTORED"); addLogEntry("Backup power restored.");
-    queueMainOutput(()=>renderReport(key,true));
+    if (renderOutput) queueMainOutput(()=>renderReport(key,true));
   }
   if (Object.values(state.diagnostics).every(Boolean) && !state.statusRevealed.systemIntegrity) { state.statusRevealed.systemIntegrity=true; addLogEntry("System Integrity assessment available."); }
   updateResources(); updateSystemStatus(); refreshDiagnosticButtons(); refreshActionUnlocks(); refreshShellPanels(); updateButtons(); saveGame();
