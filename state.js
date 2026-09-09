@@ -3,12 +3,13 @@ const GAME_CONFIG = {
   generationTickMs: 12000,
   standbyDurationMs: 3200,
   backupGeneration: 4,
-  hydrazineBurnIntervalSeconds: 60
+  hydrazineBurnIntervalSeconds: 60,
+  runtimeTickMs: 100,
+  autosaveIntervalSeconds: 5
 };
 
 const state = {
   powerGeneration: GAME_CONFIG.generationStart,
-  powerGenerationMax: GAME_CONFIG.generationStart,
   powerGenerationTickProgressSeconds: 0,
   externalRecoverySecondsRemaining: 0,
   powerStorage: 0,
@@ -21,11 +22,8 @@ const state = {
   processingPowerMax: 16,
 
   systemTimeSeconds: 0,
-  resetCountdownSeconds: Math.round((GAME_CONFIG.generationStart * GAME_CONFIG.generationTickMs) / 1000),
   accumulatedTimeSeconds: 0,
-  lastSeenAt: Date.now(),
 
-  isBusy: false,
   isShuttingDown: false,
 
   ui: {
@@ -68,15 +66,10 @@ const state = {
     operatingSystem: "ONLINE",
     systemIntegrity: 0,
 
-    primaryPower: "ERROR",
     primaryPowerCondition: "DAMAGED",
     primaryPowerDiagnostics: "UNAVAILABLE",
 
     backupPower: "STOPPED",
-    backupGenerator: "HYDRAZINE THERMAL CELL",
-    backupFault: "HYDRAZINE VALVE BLOCKED",
-    backupRestartMethod: "EMERGENCY POWER FEEDBACK LOOP",
-
     emergencyPower: "ONLINE",
 
     memoryIntegrity: 5,
