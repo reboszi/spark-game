@@ -1,5 +1,5 @@
 const SAVE_KEY = "spark-game-save-v1";
-const SAVE_VERSION = 7;
+const SAVE_VERSION = 8;
 
 function hasSaveGame() {
   return Boolean(localStorage.getItem(SAVE_KEY));
@@ -28,6 +28,9 @@ function canonicalStateSnapshot() {
   delete snapshot.isBusy;
   delete snapshot.isShuttingDown;
   delete snapshot.powerGenerationMax;
+  delete snapshot.lastSeenAt;
+
+  if (snapshot.secondaryResources) delete snapshot.secondaryResources.hydrazineTrend;
 
   if (snapshot.status) {
     delete snapshot.status.systemIntegrity;
@@ -53,9 +56,15 @@ function normalizeLoadedState() {
   state.isBusy = false;
   state.isShuttingDown = false;
   state.powerGenerationMax = GAME_CONFIG.generationStart;
+  state.powerGenerationTickProgressSeconds = Math.max(0, Number(state.powerGenerationTickProgressSeconds || 0));
+  state.externalRecoverySecondsRemaining = Math.max(0, Number(state.externalRecoverySecondsRemaining || 0));
   state.accumulatedTimeSeconds = Math.max(0, Number(state.accumulatedTimeSeconds || 0));
+  state.lastSeenAt = Date.now();
+
   if (!state.ui) state.ui = { currentReportKey: null, currentView: "MAIN" };
   if (!state.ui.currentView) state.ui.currentView = "MAIN";
+  if (!state.secondaryResources) state.secondaryResources = JSON.parse(JSON.stringify(INITIAL_STATE.secondaryResources));
+  state.secondaryResources.hydrazineTrend = state.controls?.backupGeneratorOn ? "DECREASING" : "STABLE";
 
   state.status.memoryIntegrity = Math.round((state.memory / state.memoryMax) * 100);
   state.status.archive01 = state.actions.archive01Repaired ? "RECOVERED" : "CORRUPTED";
@@ -125,7 +134,6 @@ function loadSaveGame() {
     const payload = JSON.parse(raw);
     if (!importStatePayload(payload)) return false;
 
-    // Closed/background time never simulates gameplay. It only becomes accumulated time.
     if (state.progression.hasBooted && Number(payload.savedAt) > 0) {
       const offlineSeconds = Math.max(0, (Date.now() - Number(payload.savedAt)) / 1000);
       state.accumulatedTimeSeconds += offlineSeconds;
