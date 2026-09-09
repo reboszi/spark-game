@@ -104,6 +104,18 @@ button.taskbar-review strong{ color:var(--green-bright); }
 .log-entry:last-child{ color:var(--green); }
 .log-index{ color:var(--dim); margin-right:7px; }
 
+.debug-panel{ position:fixed; top:14px; right:14px; width:min(520px,calc(100vw - 28px)); max-height:calc(100vh - 28px); overflow:auto; z-index:2000; background:#030703; border:1px solid var(--warn); box-shadow:0 12px 36px rgba(0,0,0,.65); padding:12px; font-size:.76rem; }
+.debug-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--warn); padding-bottom:8px; border-bottom:1px solid var(--line); }
+.debug-header span{ color:var(--neutral); font-size:.7rem; }
+.debug-section{ margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
+.debug-title{ color:var(--dim); letter-spacing:.12em; margin-bottom:8px; }
+.debug-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.debug-grid.compact{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+.debug-panel button{ min-height:32px; padding:6px 8px; font-size:.72rem; }
+.debug-task-row{ display:grid; grid-template-columns:1.7fr 1fr auto auto; align-items:center; gap:6px; padding:5px 0; border-bottom:1px dotted var(--line); }
+.debug-task-row button{ min-height:28px; }
+.debug-empty{ color:var(--neutral); padding:6px 0; }
+
 @media (max-width:1500px){
   .system-status{ width:280px; }
   .activity-log{ width:280px; }
@@ -129,4 +141,6 @@ button.taskbar-review strong{ color:var(--green-bright); }
   button.taskbar-review{ width:auto; }
   .resource-name{ font-size:.7rem; }
   .resource-value,.power-requirement{ font-size:.82rem; }
+  .debug-grid,.debug-grid.compact{ grid-template-columns:1fr; }
+  .debug-task-row{ grid-template-columns:1fr; }
 }
