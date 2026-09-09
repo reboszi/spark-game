@@ -134,12 +134,12 @@ function refreshShellPanels() {
   renderSecondaryResources();
 }
 
-runningTasksBar.addEventListener("click", event => {
+runningTasksBar.addEventListener("pointerdown", event => {
   const reviewButton = event.target.closest("[data-review-task]");
-  if (reviewButton) {
-    state.ui.currentView = "MAIN";
-    reviewTask(reviewButton.dataset.reviewTask);
-  }
+  if (!reviewButton) return;
+  event.preventDefault();
+  state.ui.currentView = "MAIN";
+  reviewTask(reviewButton.dataset.reviewTask);
 });
 
 navigationPanel.addEventListener("click", event => {
