@@ -116,13 +116,19 @@ function removeTask(taskId) {
 function reviewTask(taskId) {
   const task = (state.runningTasks || []).find(item => item.id === taskId && item.status === "REVIEW");
   if (!task) return;
-  applyTaskResult(task.key);
+
+  const reportKey = task.key;
+  applyTaskResult(reportKey, false);
   removeTask(task.id);
   resumePausedTasks();
   updateResources();
   updateTaskBar();
   updateButtons();
   saveGame();
+
+  // Reports are explicitly user-opened views. Render immediately rather than
+  // enqueueing behind other terminal animations.
+  if (REPORTS[reportKey]) void renderReport(reportKey, false);
 }
 
 function tickTasks(deltaSeconds = 1) {
