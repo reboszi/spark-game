@@ -1,66 +1,59 @@
 let debugSessionActive = false;
 
 const DEBUG_PRESETS = {
-  BOOT: apply => {
+  BOOT: () => {
     applyBaseBoot();
     state.ui.currentReportKey = null;
+    state.ui.currentView = "MAIN";
   },
-  POST_SYSTEM_DIAGNOSTICS: apply => {
+  POST_SYSTEM_DIAGNOSTICS: () => {
     applyBaseSystemDiagnostics();
     state.ui.currentReportKey = "system:diagnostics";
   },
-  FIRST_RESET: apply => {
+  FIRST_RESET: () => {
     applyBaseSystemDiagnostics();
     applyFirstReset();
     state.ui.currentReportKey = "system:diagnostics";
   },
-  BASIC_DIAGNOSTICS: apply => {
+  BASIC_DIAGNOSTICS: () => {
     applyBaseSystemDiagnostics();
     applyFirstReset();
     applyBasicDiagnostics();
     state.ui.currentReportKey = "diag:io";
   },
-  ARCHIVE_01_AVAILABLE: apply => {
+  ARCHIVE_01_AVAILABLE: () => {
     applyBaseSystemDiagnostics();
     applyFirstReset();
     applyBasicDiagnostics();
     state.ui.currentReportKey = "diag:memory";
   },
-  ARCHIVE_01_RECOVERED: apply => {
+  ARCHIVE_01_RECOVERED: () => {
     applyBaseSystemDiagnostics();
     applyFirstReset();
     applyBasicDiagnostics();
     state.actions.archive01Repaired = true;
-    state.status.archive01 = "RECOVERED";
-    state.progression.processorArrayKnown = true;
     state.memory = Math.max(state.memory, 9);
     addTimelineEntry("DATA ARCHIVE 01 RECOVERED", 240);
     state.ui.currentReportKey = "repair:archive01";
   },
-  PROCESSOR_CORE_02_ONLINE: apply => {
+  PROCESSOR_CORE_02_ONLINE: () => {
     DEBUG_PRESETS.ARCHIVE_01_RECOVERED();
     state.actions.processorCore02Online = true;
     state.processingPower = 2;
     addTimelineEntry("PROCESSOR CORE 02 ONLINE", 300);
     state.ui.currentReportKey = "planned:processor";
   },
-  BACKUP_POWER_READY: apply => {
+  BACKUP_POWER_READY: () => {
     DEBUG_PRESETS.PROCESSOR_CORE_02_ONLINE();
-    state.controls.backupGeneratorUnlocked = false;
     state.controls.backupGeneratorOn = false;
-    state.status.backupPower = "STOPPED";
     state.actions.backupRestarted = false;
-    state.progression.secondaryResourcesUnlocked = false;
     state.powerGeneration = 6;
     state.ui.currentReportKey = "planned:processor";
   },
-  BACKUP_POWER_ONLINE: apply => {
+  BACKUP_POWER_ONLINE: () => {
     DEBUG_PRESETS.PROCESSOR_CORE_02_ONLINE();
     state.actions.backupRestarted = true;
-    state.controls.backupGeneratorUnlocked = true;
     state.controls.backupGeneratorOn = true;
-    state.status.backupPower = "ONLINE";
-    state.progression.secondaryResourcesUnlocked = true;
     addTimelineEntry("BACKUP POWER RESTORED", 360);
     state.ui.currentReportKey = "planned:backup";
   }
@@ -69,12 +62,12 @@ const DEBUG_PRESETS = {
 function applyBaseBoot() {
   state.progression.hasBooted = true;
   state.logEntries = ["Debug state loaded."];
+  state.ui.currentView = "MAIN";
 }
 
 function applyBaseSystemDiagnostics() {
   applyBaseBoot();
   state.progression.systemDiagnosticsComplete = true;
-  state.progression.taskbarUnlocked = true;
   state.revealed.systemTime = true;
   state.revealed.powerGeneration = true;
   state.revealed.processingPower = true;
@@ -86,7 +79,6 @@ function applyBaseSystemDiagnostics() {
 
 function applyFirstReset() {
   state.progression.firstResetSeen = true;
-  state.progression.navigationUnlocked = true;
   addTimelineEntry("FIRST SYSTEM RESET", 180);
   state.systemTimeSeconds = 200;
 }
@@ -106,7 +98,6 @@ function applyBasicDiagnostics() {
   state.statusRevealed.communications = true;
   state.statusRevealed.unknownInterfaces = true;
   state.statusRevealed.systemIntegrity = true;
-  state.progression.controlPanelUnlocked = true;
 }
 
 function stopGameTimersForDebug() {
@@ -126,7 +117,7 @@ function refreshDebugStateScreen() {
   systemScreen.classList.remove("hidden");
   refreshInterfaceFromState();
   refreshShellPanels();
-  renderCurrentMainScreen();
+  applyCurrentView();
   updateDebugPanel();
 }
 
@@ -137,24 +128,25 @@ function jumpToDebugPreset(name) {
   stopGameTimersForDebug();
   resetStateToDefaults();
   preset();
-  normalizeLoadedState();
   refreshDebugStateScreen();
 }
 
 function debugAdvanceTime(seconds) {
-  const amount = Math.max(0, Number(seconds || 0));
+  const amount = Math.max(0, Math.floor(Number(seconds || 0)));
   if (!amount) return;
   debugSessionActive = true;
   stopGameTimersForDebug();
 
-  state.systemTimeSeconds += amount;
-  state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - amount);
-  tickTasks(amount);
+  for (let second = 1; second <= amount; second++) {
+    state.systemTimeSeconds += 1;
+    state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - 1);
+    tickTasks(1);
+    tickBackupFuel();
 
-  const generationTicks = Math.floor(amount / (GAME_CONFIG.generationTickMs / 1000));
-  if (generationTicks > 0) {
-    state.powerGeneration = Math.max(0, state.powerGeneration - generationTicks);
-    pauseTasksForPower();
+    if (second % Math.round(GAME_CONFIG.generationTickMs / 1000) === 0 && state.powerGeneration > 0) {
+      state.powerGeneration = Math.max(0, state.powerGeneration - 1);
+      pauseTasksForPower();
+    }
   }
 
   refreshDebugStateScreen();
