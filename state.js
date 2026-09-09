@@ -19,6 +19,7 @@ const state = {
   processingPowerMax: 16,
 
   systemTimeSeconds: 0,
+  accumulatedTimeSeconds: 0,
   resetCountdownSeconds: Math.round((GAME_CONFIG.generationStart * GAME_CONFIG.generationTickMs) / 1000),
 
   isBusy: false,
