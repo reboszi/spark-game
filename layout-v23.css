@@ -1,0 +1,92 @@
+.workspace {
+  grid-template-columns: minmax(180px, 1fr) minmax(560px, 820px) minmax(180px, 1fr);
+  align-items: stretch;
+}
+
+.inner-panel {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  align-self: stretch;
+  margin: 0;
+}
+
+.control-panel,
+.secondary-resources-panel {
+  display: block;
+}
+
+.running-tasks-bar {
+  gap: 8px;
+}
+
+.running-tasks-bar .taskbar-item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.running-tasks-bar .taskbar-reset {
+  flex: .75 1 0;
+}
+
+.running-tasks-bar .taskbar-divider {
+  flex: 0 0 auto;
+}
+
+.running-tasks-bar .taskbar-empty {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.secondary-resource-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.secondary-resource-name {
+  font-weight: normal;
+}
+
+.resource-trend-icon {
+  display: inline-block;
+  width: 1em;
+  text-align: center;
+}
+
+.resource-trend-up .secondary-resource-name {
+  color: var(--green-bright);
+  text-shadow: 0 0 7px rgba(182,255,182,.24);
+}
+
+.resource-trend-stable .secondary-resource-name {
+  color: var(--green);
+}
+
+.resource-trend-down .secondary-resource-name {
+  color: var(--orange);
+  text-shadow: 0 0 7px rgba(255,154,87,.18);
+}
+
+@media (max-width:1500px) {
+  .workspace {
+    grid-template-columns: minmax(150px, 1fr) minmax(540px, 720px) minmax(150px, 1fr);
+  }
+}
+
+@media (max-width:1180px) {
+  .workspace {
+    display: block;
+  }
+
+  .inner-panel {
+    width: 100%;
+  }
+
+  .running-tasks-bar .taskbar-item {
+    min-width: 150px;
+  }
+}
