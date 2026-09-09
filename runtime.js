@@ -2,6 +2,7 @@ let runtimeClockTimer = null;
 let runtimeLastTickAt = null;
 let backgroundPauseStartedAt = null;
 let powerCycleActive = false;
+let autosaveElapsedSeconds = 0;
 
 function formatSystemTime(totalSeconds) {
   const seconds = Math.max(0, Math.floor(totalSeconds || 0));
@@ -27,14 +28,20 @@ function formatAccumulatedTime(totalSeconds) {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
+function getExternalPowerCountdownSeconds() {
+  if (state.powerGeneration <= 0) return 0;
+  const tickSeconds = GAME_CONFIG.generationTickMs / 1000;
+  return Math.max(0, state.powerGeneration * tickSeconds - state.powerGenerationTickProgressSeconds);
+}
+
 function resetSystemResetCountdown() {
   state.powerGenerationTickProgressSeconds = 0;
-  state.resetCountdownSeconds = Math.round((GAME_CONFIG.generationStart * GAME_CONFIG.generationTickMs) / 1000);
+  state.externalRecoverySecondsRemaining = 0;
   updateTaskBar();
 }
 
 function tickBackupFuel(deltaSeconds) {
-  if (!state.controls?.backupGeneratorOn) {
+  if (!state.controls.backupGeneratorOn) {
     state.secondaryResources.hydrazineTrend = "STABLE";
     return;
   }
@@ -42,21 +49,23 @@ function tickBackupFuel(deltaSeconds) {
   state.secondaryResources.hydrazineTrend = "DECREASING";
   state.secondaryResources.hydrazineBurnSeconds += deltaSeconds;
 
-  while (state.secondaryResources.hydrazineBurnSeconds >= GAME_CONFIG.hydrazineBurnIntervalSeconds && state.secondaryResources.hydrazineReserveHidden > 0) {
+  while (
+    state.secondaryResources.hydrazineBurnSeconds >= GAME_CONFIG.hydrazineBurnIntervalSeconds
+    && state.secondaryResources.hydrazineReserveHidden > 0
+  ) {
     state.secondaryResources.hydrazineBurnSeconds -= GAME_CONFIG.hydrazineBurnIntervalSeconds;
     state.secondaryResources.hydrazineReserveHidden = Math.max(0, state.secondaryResources.hydrazineReserveHidden - 1);
   }
 
-  if (state.secondaryResources.hydrazineReserveHidden <= 0) {
-    state.controls.backupGeneratorOn = false;
-    state.secondaryResources.hydrazineTrend = "STABLE";
-    state.status.backupPower = "STOPPED";
-    addLogEntry("Backup generator stopped: hydrazine depleted.");
-    refreshShellPanels();
-    updateSystemStatus();
-    pauseTasksForPower();
-    if (state.powerGeneration <= 0 && state.powerStorage <= 0) void shutdownSystem();
-  }
+  if (state.secondaryResources.hydrazineReserveHidden > 0) return;
+
+  state.controls.backupGeneratorOn = false;
+  state.secondaryResources.hydrazineTrend = "STABLE";
+  state.status.backupPower = "STOPPED";
+  addLogEntry("Backup generator stopped: hydrazine depleted.");
+  pauseTasksForPower();
+
+  if (state.powerGeneration <= 0 && state.powerStorage <= 0) void shutdownSystem();
 }
 
 function startPowerCycle() {
@@ -70,18 +79,16 @@ function stopPowerCycle() {
 function restoreExternalGenerationFromRuntime() {
   state.externalRecoverySecondsRemaining = 0;
   state.powerGeneration = GAME_CONFIG.generationStart;
-  resetSystemResetCountdown();
+  state.powerGenerationTickProgressSeconds = 0;
   addLogEntry("External power generation restored.");
   resumePausedTasks();
-  updateResources();
-  updateTaskBar();
 }
 
 function tickExternalPower(deltaSeconds) {
   if (!powerCycleActive || state.isShuttingDown || !state.progression.systemDiagnosticsComplete) return;
 
   if (state.powerGeneration <= 0) {
-    if (state.controls?.backupGeneratorOn || state.powerStorage > 0) {
+    if (state.controls.backupGeneratorOn || state.powerStorage > 0) {
       if (state.externalRecoverySecondsRemaining <= 0) {
         state.externalRecoverySecondsRemaining = GAME_CONFIG.standbyDurationMs / 1000;
       }
@@ -93,7 +100,6 @@ function tickExternalPower(deltaSeconds) {
 
   const tickSeconds = GAME_CONFIG.generationTickMs / 1000;
   state.powerGenerationTickProgressSeconds += deltaSeconds;
-  state.resetCountdownSeconds = Math.max(0, state.resetCountdownSeconds - deltaSeconds);
 
   while (state.powerGenerationTickProgressSeconds >= tickSeconds && state.powerGeneration > 0) {
     state.powerGenerationTickProgressSeconds -= tickSeconds;
@@ -101,47 +107,54 @@ function tickExternalPower(deltaSeconds) {
     pauseTasksForPower();
   }
 
-  if (state.powerGeneration <= 0) {
-    state.powerGenerationTickProgressSeconds = 0;
-    state.resetCountdownSeconds = 0;
-    if (state.controls?.backupGeneratorOn || state.powerStorage > 0) {
-      state.externalRecoverySecondsRemaining = GAME_CONFIG.standbyDurationMs / 1000;
-    } else {
-      void shutdownSystem();
-    }
+  if (state.powerGeneration > 0) return;
+
+  state.powerGenerationTickProgressSeconds = 0;
+  if (state.controls.backupGeneratorOn || state.powerStorage > 0) {
+    state.externalRecoverySecondsRemaining = GAME_CONFIG.standbyDurationMs / 1000;
+  } else {
+    void shutdownSystem();
   }
 }
 
-function processRuntimeElapsed(deltaSeconds) {
+function advanceGameSimulation(deltaSeconds) {
   const delta = Math.max(0, Number(deltaSeconds || 0));
-  if (!delta || document.hidden) return;
+  if (!delta) return;
 
   if (state.revealed.systemTime) state.systemTimeSeconds += delta;
+  if (state.isShuttingDown) return;
 
-  if (!state.isShuttingDown) {
-    tickExternalPower(delta);
-    tickBackupFuel(delta);
-    tickTasks(delta);
+  tickExternalPower(delta);
+  if (state.isShuttingDown) return;
+
+  tickBackupFuel(delta);
+  if (state.isShuttingDown) return;
+
+  tickTasks(delta);
+
+  autosaveElapsedSeconds += delta;
+  if (autosaveElapsedSeconds >= GAME_CONFIG.autosaveIntervalSeconds) {
+    autosaveElapsedSeconds = 0;
+    saveGame();
   }
 }
 
 function runtimeTick() {
   if (document.hidden) return;
+
   const now = Date.now();
   if (runtimeLastTickAt === null) runtimeLastTickAt = now;
   const deltaSeconds = Math.max(0, (now - runtimeLastTickAt) / 1000);
   runtimeLastTickAt = now;
 
-  processRuntimeElapsed(deltaSeconds);
-  updateResources();
-  updateTaskBar();
-  renderSecondaryResources();
+  advanceGameSimulation(deltaSeconds);
+  refreshDynamicUi();
 }
 
 function startRuntimeClock() {
   if (runtimeClockTimer || document.hidden) return;
   runtimeLastTickAt = Date.now();
-  runtimeClockTimer = setInterval(runtimeTick, 100);
+  runtimeClockTimer = setInterval(runtimeTick, GAME_CONFIG.runtimeTickMs);
 }
 
 function stopRuntimeClock() {
@@ -154,23 +167,21 @@ function beginBackgroundPause() {
   if (backgroundPauseStartedAt !== null) return;
   backgroundPauseStartedAt = Date.now();
   stopRuntimeClock();
-  if (typeof saveGame === "function") saveGame();
+  saveGame();
 }
 
 function endBackgroundPause() {
   if (backgroundPauseStartedAt !== null) {
     const elapsed = Math.max(0, (Date.now() - backgroundPauseStartedAt) / 1000);
-    state.accumulatedTimeSeconds = Math.max(0, Number(state.accumulatedTimeSeconds || 0)) + elapsed;
+    state.accumulatedTimeSeconds += elapsed;
     backgroundPauseStartedAt = null;
   }
 
   runtimeLastTickAt = Date.now();
   if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) startRuntimeClock();
-  updateResources();
-  updateTaskBar();
-  renderSecondaryResources();
+  refreshDynamicUi();
   if (typeof updateDebugPanel === "function") updateDebugPanel();
-  if (typeof saveGame === "function") saveGame();
+  saveGame();
 }
 
 document.addEventListener("visibilitychange", () => {
@@ -179,5 +190,5 @@ document.addEventListener("visibilitychange", () => {
 });
 
 window.addEventListener("pagehide", () => {
-  if (!document.hidden && typeof saveGame === "function") saveGame();
+  if (!document.hidden) saveGame();
 });
