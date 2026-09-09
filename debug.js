@@ -76,11 +76,6 @@ function applyBaseBoot() {
 function applyBaseSystemDiagnostics() {
   applyBaseBoot();
   state.progression.systemDiagnosticsComplete = true;
-  state.revealed.systemTime = true;
-  state.revealed.powerGeneration = true;
-  state.revealed.processingPower = true;
-  state.statusRevealed.operatingSystem = true;
-  state.statusRevealed.emergencyPower = true;
   state.timelineEntries = [{ timeSeconds: 0, text: "SYSTEM BOOT" }];
   state.systemTimeSeconds = 120;
   state.powerGenerationTickProgressSeconds = 0;
@@ -171,9 +166,10 @@ function debugStartNewPowerCycle() {
 function debugCompleteTask(taskId) {
   const task = state.runningTasks.find(item => item.id === taskId);
   if (!task) return;
+
   stopGameTimersForDebug();
   task.remainingSeconds = 0;
-  finishTask(task);
+  finishTask(task, { refresh: false, persist: false });
   refreshDebugStateScreen();
 }
 
@@ -194,7 +190,7 @@ function debugCompleteAllTasks() {
   stopGameTimersForDebug();
   for (const task of [...state.runningTasks]) {
     task.remainingSeconds = 0;
-    finishTask(task);
+    finishTask(task, { refresh: false, persist: false });
   }
   refreshDebugStateScreen();
 }
