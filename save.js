@@ -53,6 +53,8 @@ function normalizeLoadedState() {
   state.isBusy = false;
   state.isShuttingDown = false;
   state.powerGenerationMax = GAME_CONFIG.generationStart;
+  if (!state.ui) state.ui = { currentReportKey: null, currentView: "MAIN" };
+  if (!state.ui.currentView) state.ui.currentView = "MAIN";
 
   state.status.memoryIntegrity = Math.round((state.memory / state.memoryMax) * 100);
   state.status.archive01 = state.actions.archive01Repaired ? "RECOVERED" : "CORRUPTED";
@@ -154,7 +156,7 @@ function restoreLoadedStateToScreen() {
 
   refreshInterfaceFromState();
   refreshShellPanels();
-  renderCurrentMainScreen();
+  applyCurrentView();
 
   if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) startRuntimeClock();
   if (state.progression.systemDiagnosticsComplete) startPowerCycle();
