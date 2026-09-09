@@ -56,23 +56,25 @@ function hasTaskImplementation(button) {
   return !key || Boolean(TASK_DEFINITIONS[key]);
 }
 
-function buttonRequirementsMet(button) {
+function buttonRequirementsMet(button, availablePower = getAvailableGeneration()) {
   const memoryReq = getMemoryRequirement(button);
   return hasTaskImplementation(button)
-    && getAvailableGeneration() >= Number(button.dataset.powerRequirement || 0)
+    && availablePower >= Number(button.dataset.powerRequirement || 0)
     && state.processingPower >= Number(button.dataset.processingRequirement || 0)
     && (memoryReq === null || state.memory >= memoryReq)
     && hasSpecialRequirement(button);
 }
 
 function updateButtons() {
+  const availablePower = getAvailableGeneration();
+
   document.querySelectorAll(".controls button").forEach(button => {
     const taskKey = getButtonTaskKey(button);
     const alreadyRunning = taskKey ? Boolean(taskByKey(taskKey)) : false;
     const powerReq = Number(button.dataset.powerRequirement || 0);
-    const locked = !buttonRequirementsMet(button);
+    const locked = !buttonRequirementsMet(button, availablePower);
 
-    button.classList.toggle("power-insufficient", getAvailableGeneration() < powerReq);
+    button.classList.toggle("power-insufficient", availablePower < powerReq);
     button.classList.toggle("requirement-locked", locked);
     button.classList.toggle("task-active", alreadyRunning);
     button.setAttribute("aria-disabled", String(state.isShuttingDown || locked || alreadyRunning));
@@ -118,11 +120,10 @@ function refreshActionUnlocks() {
     "hidden",
     ![...plannedControls.querySelectorAll("button")].some(button => !button.classList.contains("hidden"))
   );
-
-  if (Object.values(state.diagnostics).every(Boolean)) state.statusRevealed.systemIntegrity = true;
 }
 
 function showRequirements(button) {
+  const availablePower = getAvailableGeneration();
   const powerReq = Number(button.dataset.powerRequirement || 0);
   const processingReq = button.dataset.processingRequirement !== undefined
     ? Number(button.dataset.processingRequirement)
@@ -134,7 +135,7 @@ function showRequirements(button) {
   updateResources();
 
   let reqHtml = "";
-  if (powerReq) reqHtml += requirementRow("Power Generation", powerReq, getAvailableGeneration() >= powerReq);
+  if (powerReq) reqHtml += requirementRow("Power Generation", powerReq, availablePower >= powerReq);
   if (processingReq !== null) reqHtml += requirementRow("Processing Power", processingReq, state.processingPower >= processingReq);
   if (memoryReq !== null) reqHtml += requirementRow("Memory", memoryReq, state.memory >= memoryReq);
   if (button.dataset.specialRequirement) {
