@@ -5,7 +5,7 @@
   --status-width: 340px;
   --log-width: 320px;
   --inner-panel-width: 210px;
-  --action-area-height: 190px;
+  --action-area-height: 570px;
 
   --bg: #050805;
   --panel: #071007;
@@ -32,40 +32,38 @@ body { min-height: 100vh; color: var(--green); font-family: "Courier New", monos
 .hidden, .view-hidden { display: none !important; }
 
 button {
-  font: inherit;
-  color: var(--green);
-  background: #071007;
-  border: 1px solid var(--dim);
-  padding: 9px 12px;
-  cursor: pointer;
   min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--dim);
+  background: #071007;
+  color: var(--green);
+  font: inherit;
+  cursor: pointer;
 }
 button:hover:not(:disabled), button:focus-visible:not(:disabled) { background: #0d190d; border-color: var(--green); }
 button:disabled { opacity: .38; cursor: not-allowed; }
 button.power-insufficient, button.requirement-locked { border-color: var(--err); color: var(--err); opacity: .72; }
 button.task-active { border-color: var(--warn); color: var(--warn); opacity: .72; }
-button.planned-action { color: var(--green); border-color: var(--green); }
-button.planned-action.power-insufficient, button.planned-action.requirement-locked { color: var(--err); border-color: var(--err); }
-button.planned-action.task-active { color: var(--warn); border-color: var(--warn); }
+button.planned-action { border-color: var(--green); color: var(--green); }
+button.planned-action.power-insufficient, button.planned-action.requirement-locked { border-color: var(--err); color: var(--err); }
+button.planned-action.task-active { border-color: var(--warn); color: var(--warn); }
 
 .center, .standby-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
 .start-menu { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-#bootButton, #continueButton, #newGameButton { font-size: 1.05rem; letter-spacing: .12em; padding: 14px 24px; }
+#bootButton, #continueButton, #newGameButton { padding: 14px 24px; font-size: 1.05rem; letter-spacing: .12em; }
 
-.standby-screen { position: fixed; inset: 0; background: var(--bg); z-index: 500; }
+.standby-screen { position: fixed; inset: 0; z-index: 500; background: var(--bg); }
 .standby-message { text-align: center; color: var(--err); animation: standby-blink .8s steps(1) infinite; }
-.power-lost-text { font-size: clamp(2rem, 6vw, 4rem); letter-spacing: .2em; margin-bottom: 12px; }
+.power-lost-text { margin-bottom: 12px; font-size: clamp(2rem, 6vw, 4rem); letter-spacing: .2em; }
 .standby-text { font-size: clamp(1.3rem, 4vw, 2.5rem); letter-spacing: .28em; }
 @keyframes standby-blink { 50% { opacity: .12; } }
 
-/* ---------- fixed outer shell ---------- */
+/* Fixed outer shell */
 .resources {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--resources-height);
+  inset: 0 0 auto 0;
   z-index: 100;
+  height: var(--resources-height);
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -81,10 +79,10 @@ button.planned-action.task-active { color: var(--warn); border-color: var(--warn
   position: fixed;
   top: var(--resources-height);
   bottom: 0;
-  background: #061006;
-  padding: 16px;
-  overflow-y: auto;
   z-index: 90;
+  padding: 16px;
+  background: #061006;
+  overflow-y: auto;
 }
 .system-status { left: 0; width: var(--status-width); border-right: 1px solid var(--line); }
 .activity-log { right: 0; width: var(--log-width); border-left: 1px solid var(--line); }
@@ -94,8 +92,8 @@ button.planned-action.task-active { color: var(--warn); border-color: var(--warn
   top: var(--resources-height);
   left: var(--status-width);
   right: var(--log-width);
-  height: var(--taskbar-height);
   z-index: 99;
+  height: var(--taskbar-height);
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -112,17 +110,24 @@ button.planned-action.task-active { color: var(--warn); border-color: var(--warn
 #systemScreen { min-height: 100vh; padding-top: var(--resources-height); }
 #systemScreen.tasks-visible { padding-top: var(--top-shell-height); }
 
-/* ---------- main workspace ---------- */
+/* Main workspace */
 .workspace {
+  --control-column: var(--inner-panel-width);
+  --resources-column: var(--inner-panel-width);
+  --action-row: var(--action-area-height);
+
+  height: calc(100vh - var(--top-shell-height));
   margin-left: var(--status-width);
   margin-right: var(--log-width);
-  height: calc(100vh - var(--top-shell-height));
   display: grid;
-  grid-template-columns: var(--inner-panel-width) minmax(0, 1fr) var(--inner-panel-width);
-  grid-template-rows: minmax(0, 1fr) var(--action-area-height);
+  grid-template-columns: var(--control-column) minmax(0, 1fr) var(--resources-column);
+  grid-template-rows: minmax(0, 1fr) var(--action-row);
   gap: 0;
   overflow: hidden;
 }
+.workspace.control-collapsed { --control-column: 0px; }
+.workspace.resources-collapsed { --resources-column: 0px; }
+.workspace.actions-collapsed { --action-row: 0px; }
 
 .control-panel { grid-column: 1; grid-row: 1; }
 .center-workspace { grid-column: 2; grid-row: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
@@ -133,9 +138,9 @@ button.planned-action.task-active { color: var(--warn); border-color: var(--warn
   min-width: 0;
   min-height: 0;
   height: 100%;
+  padding: 14px;
   border: 1px solid var(--line);
   background: #061006;
-  padding: 14px;
   overflow-y: auto;
 }
 
@@ -144,8 +149,8 @@ button.planned-action.task-active { color: var(--warn); border-color: var(--warn
   width: 100%;
   min-height: 38px;
   display: flex;
-  gap: 8px;
   align-items: center;
+  gap: 8px;
   padding: 5px 8px;
   margin: 0;
   border: 1px solid var(--line);
@@ -153,21 +158,14 @@ button.planned-action.task-active { color: var(--warn); border-color: var(--warn
   background: rgba(7, 16, 7, .8);
 }
 
-.main-area {
-  flex: 1 1 auto;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
+.main-area { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; flex-direction: column; }
 .terminal {
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
+  padding: 18px;
   border: 1px solid var(--dim);
   background: var(--panel);
-  padding: 18px;
   overflow: auto;
   box-shadow: inset 0 0 30px rgba(80, 255, 80, .03);
 }
@@ -176,28 +174,27 @@ button.planned-action.task-active { color: var(--warn); border-color: var(--warn
 .primary-controls { flex: 0 0 auto; display: flex; gap: 8px; padding: 8px; margin: 0; border: 1px solid var(--line); border-top: 0; }
 .primary-controls button { min-width: 210px; }
 
-/* ---------- scrollable action area ---------- */
+/* Scrollable action area */
 .action-area {
   grid-column: 1 / -1;
   grid-row: 2;
   min-width: 0;
   min-height: 0;
   height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
   padding: 7px 8px 10px;
   border-top: 1px solid var(--line);
   background: #040a04;
+  overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--dim) #040a04;
 }
 .action-area::-webkit-scrollbar { width: 8px; }
 .action-area::-webkit-scrollbar-track { background: #040a04; }
 .action-area::-webkit-scrollbar-thumb { background: var(--dim); }
-
 .action-panel { margin: 0 0 7px; border: 1px solid var(--line); background: rgba(7, 16, 7, .7); }
 .action-panel:last-child { margin-bottom: 0; }
-.action-panel summary { cursor: pointer; color: var(--dim); letter-spacing: .1em; font-size: .7rem; padding: 5px 8px; user-select: none; }
+.action-panel summary { padding: 5px 8px; color: var(--dim); font-size: .7rem; letter-spacing: .1em; cursor: pointer; user-select: none; }
 .action-panel[open] summary { border-bottom: 1px solid var(--line); }
 .action-grid { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; padding: 7px 8px; margin: 0; }
 .action-grid button {
@@ -216,14 +213,13 @@ button.planned-action.task-active { color: var(--warn); border-color: var(--warn
   text-transform: none;
 }
 
-/* ---------- top resources ---------- */
+/* Top resources */
 .resource { display: flex; align-items: center; gap: 7px; transition: color .12s ease, text-shadow .12s ease; }
 .resource-name { color: var(--dim); font-size: .78rem; letter-spacing: .08em; }
 .resource-value { font-size: .95rem; }
-.system-time-resource { color: var(--neutral); padding: 5px 18px 5px 0; margin-right: 2px; border-right: 1px solid var(--dim); }
+.system-time-resource { padding: 5px 18px 5px 0; margin-right: 2px; border-right: 1px solid var(--dim); color: var(--neutral); }
 .system-time-resource .resource-name { color: var(--neutral); opacity: .72; }
 .system-time-resource .resource-value { color: var(--green-bright); }
-
 .resource.resource-power-generation { color: var(--resource-power-generation); }
 .resource.resource-power-storage { color: var(--resource-power-storage); }
 .resource.resource-memory { color: var(--resource-memory); }
@@ -265,7 +261,7 @@ button.planned-action.task-active { color: var(--warn); border-color: var(--warn
 }
 .resource-bar.requirement-active::after { opacity: 1; box-shadow: 0 0 9px currentColor; }
 
-/* ---------- task bar ---------- */
+/* Task bar */
 .taskbar-item {
   flex: 0 0 190px;
   min-width: 190px;
@@ -285,27 +281,26 @@ button.planned-action.task-active { color: var(--warn); border-color: var(--warn
 .taskbar-reset, .taskbar-reset strong { color: var(--err); }
 .taskbar-paused, .taskbar-paused strong { color: var(--warn); }
 .taskbar-stable, .taskbar-stable strong { color: var(--green); }
-.taskbar-divider { color: var(--dim); flex: 0 0 auto; }
+.taskbar-divider { flex: 0 0 auto; color: var(--dim); }
 .taskbar-empty { flex: 0 0 auto; color: var(--dim); letter-spacing: .1em; }
-.task-progress { grid-column: 1 / -1; display: block; width: 100%; height: 3px; background: #0a180b; border: 1px solid var(--line); overflow: hidden; }
+.task-progress { grid-column: 1 / -1; display: block; width: 100%; height: 3px; border: 1px solid var(--line); background: #0a180b; overflow: hidden; }
 .task-progress > span { display: block; height: 100%; background: var(--green); box-shadow: 0 0 5px rgba(118, 255, 118, .45); }
 .taskbar-paused .task-progress > span { background: var(--warn); }
 button.taskbar-review { min-height: 34px; padding: 4px 7px; border: 1px solid var(--green); background: transparent; color: var(--green); font-size: inherit; letter-spacing: inherit; }
 button.taskbar-review > * { pointer-events: none; }
 button.taskbar-review strong { color: var(--green-bright); }
 
-/* ---------- system status and activity log ---------- */
-.panel-main-title { color: var(--green); font-size: 1rem; letter-spacing: .14em; margin-bottom: 18px; }
+/* Status and log */
+.panel-main-title { margin-bottom: 18px; color: var(--green); font-size: 1rem; letter-spacing: .14em; }
 .status-group { margin: 18px 0; }
-.status-group-title { color: var(--dim); font-size: .76rem; letter-spacing: .14em; padding-bottom: 5px; margin-bottom: 7px; border-bottom: 1px solid var(--line); }
-.status-subheading { color: var(--dim); font-size: .76rem; letter-spacing: .06em; margin-top: 10px; margin-bottom: 3px; }
+.status-group-title { margin-bottom: 7px; padding-bottom: 5px; border-bottom: 1px solid var(--line); color: var(--dim); font-size: .76rem; letter-spacing: .14em; }
+.status-subheading { margin: 10px 0 3px; color: var(--dim); font-size: .76rem; letter-spacing: .06em; }
 .status-row { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; white-space: nowrap; }
 .status-label { flex: 0 1 auto; }
 .status-dots { flex: 1; min-width: 12px; border-bottom: 1px dotted var(--dim); transform: translateY(-3px); }
 .log-entry { padding: 6px 0; border-bottom: 1px dotted var(--line); color: var(--neutral); line-height: 1.35; font-size: .82rem; }
 .log-entry:last-child { color: var(--green); }
-.log-index { color: var(--dim); margin-right: 7px; }
-
+.log-index { margin-right: 7px; color: var(--dim); }
 .status-line { color: var(--green); }
 .warn { color: var(--warn); }
 .err { color: var(--err); }
@@ -317,16 +312,16 @@ button.taskbar-review strong { color: var(--green-bright); }
 .storage-mid { color: var(--warn); }
 .storage-good { color: var(--green); }
 
-/* ---------- navigation / timeline ---------- */
+/* Navigation and timeline */
 .nav-button { min-height: 28px; padding: 4px 10px; border-color: var(--line); color: var(--neutral); }
-.nav-button.active { color: var(--green-bright); border-color: var(--green); background: #0b170b; }
-.timeline-title { color: var(--green-bright); letter-spacing: .12em; margin-bottom: 14px; }
+.nav-button.active { border-color: var(--green); background: #0b170b; color: var(--green-bright); }
+.timeline-title { margin-bottom: 14px; color: var(--green-bright); letter-spacing: .12em; }
 .timeline-row { display: grid; grid-template-columns: 150px 1fr; gap: 18px; padding: 7px 0; border-bottom: 1px dotted var(--line); color: var(--neutral); }
 .timeline-row span:first-child { color: var(--dim); }
 
-/* ---------- control panel ---------- */
-.control-unit { border: 1px solid var(--line); padding: 12px; background: #040804; }
-.control-label { color: var(--neutral); font-size: .74rem; letter-spacing: .1em; margin-bottom: 12px; text-align: center; }
+/* Control panel */
+.control-unit { padding: 12px; border: 1px solid var(--line); background: #040804; }
+.control-label { margin-bottom: 12px; color: var(--neutral); font-size: .74rem; letter-spacing: .1em; text-align: center; }
 .power-switch {
   width: 90px;
   height: 92px;
@@ -345,26 +340,25 @@ button.taskbar-review strong { color: var(--green-bright); }
 .power-switch .switch-lever { display: block; width: 22px; height: 42px; border: 1px solid #697269; background: linear-gradient(90deg, #343a34, #8b938b, #343a34); box-shadow: 0 3px 6px rgba(0, 0, 0, .7); transform-origin: center; transition: transform .16s ease; }
 .power-switch.on .switch-lever { transform: translateY(-5px) rotateX(18deg); }
 .power-switch.off .switch-lever { transform: translateY(5px) rotateX(-18deg); }
-.power-switch .switch-state { font-size: .72rem; letter-spacing: .12em; color: var(--neutral); }
+.power-switch .switch-state { color: var(--neutral); font-size: .72rem; letter-spacing: .12em; }
 .power-switch.on { border-color: var(--green); box-shadow: inset 0 0 0 2px #020302, 0 0 10px rgba(118, 255, 118, .16); }
 .power-switch.on .switch-state { color: var(--green); }
 .power-switch.locked { border-color: var(--err); opacity: .58; }
 .power-switch.locked .switch-state { color: var(--err); }
 
-/* ---------- secondary resources ---------- */
-.secondary-resource-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px dotted var(--line); font-size: .8rem; color: var(--neutral); }
-.secondary-resource-row strong { font-weight: normal; }
-.secondary-resource-name { font-weight: normal; }
+/* Secondary resources */
+.secondary-resource-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px dotted var(--line); color: var(--neutral); font-size: .8rem; }
+.secondary-resource-row strong, .secondary-resource-name { font-weight: normal; }
 .resource-trend-icon { display: inline-block; width: 1em; text-align: center; }
 .resource-trend-up .secondary-resource-name { color: var(--green-bright); text-shadow: 0 0 7px rgba(182, 255, 182, .24); }
 .resource-trend-stable .secondary-resource-name { color: var(--green); }
 .resource-trend-down .secondary-resource-name { color: var(--orange); text-shadow: 0 0 7px rgba(255, 154, 87, .18); }
 
-/* ---------- action tooltip ---------- */
+/* Action tooltip */
 .action-tooltip { position: fixed; z-index: 1000; width: 300px; padding: 12px 14px; border: 1px solid var(--dim); background: #030703; box-shadow: 0 8px 28px rgba(0, 0, 0, .55), inset 0 0 24px rgba(80, 255, 80, .025); pointer-events: none; font-size: .8rem; }
-.tooltip-title { color: var(--green-bright); letter-spacing: .08em; margin-bottom: 8px; }
-.tooltip-description { color: var(--neutral); line-height: 1.35; margin-bottom: 12px; }
-.tooltip-section-title { color: var(--dim); font-size: .7rem; letter-spacing: .12em; border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-bottom: 5px; }
+.tooltip-title { margin-bottom: 8px; color: var(--green-bright); letter-spacing: .08em; }
+.tooltip-description { margin-bottom: 12px; color: var(--neutral); line-height: 1.35; }
+.tooltip-section-title { margin-bottom: 5px; padding-bottom: 4px; border-bottom: 1px solid var(--line); color: var(--dim); font-size: .7rem; letter-spacing: .12em; }
 .tooltip-outcome-title { margin-top: 12px; }
 .tooltip-requirement { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
 .tooltip-requirement.requirement-power.met { color: var(--resource-power-generation); }
@@ -372,9 +366,9 @@ button.taskbar-review strong { color: var(--green-bright); }
 .tooltip-requirement.requirement-memory.met { color: var(--resource-memory); }
 .tooltip-requirement.met:not(.requirement-power):not(.requirement-processing):not(.requirement-memory) { color: var(--green); }
 .tooltip-requirement.unmet { color: var(--err); }
-.tooltip-outcome { color: var(--unknown); line-height: 1.35; padding-top: 2px; }
+.tooltip-outcome { padding-top: 2px; color: var(--unknown); line-height: 1.35; }
 
-/* ---------- screen effects ---------- */
+/* Screen effects */
 #systemScreen.screen-wake { animation: system-wake .8s steps(2, end); }
 #systemScreen.screen-restored { animation: screen-restored .8s ease-out; }
 @keyframes system-wake {
@@ -391,24 +385,24 @@ button.taskbar-review strong { color: var(--green-bright); }
   100% { filter: brightness(1); opacity: 1; }
 }
 
-/* ---------- developer tools ---------- */
-.debug-panel { position: fixed; top: 14px; right: 14px; width: min(520px, calc(100vw - 28px)); max-height: calc(100vh - 28px); overflow: auto; z-index: 2000; background: #030703; border: 1px solid var(--warn); box-shadow: 0 12px 36px rgba(0, 0, 0, .65); padding: 12px; font-size: .76rem; }
-.debug-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--warn); padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+/* Developer tools */
+.debug-panel { position: fixed; top: 14px; right: 14px; z-index: 2000; width: min(520px, calc(100vw - 28px)); max-height: calc(100vh - 28px); padding: 12px; border: 1px solid var(--warn); background: #030703; box-shadow: 0 12px 36px rgba(0, 0, 0, .65); overflow: auto; font-size: .76rem; }
+.debug-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--warn); }
 .debug-header span { color: var(--neutral); font-size: .7rem; }
 .debug-section { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
-.debug-title { color: var(--dim); letter-spacing: .12em; margin-bottom: 8px; }
+.debug-title { margin-bottom: 8px; color: var(--dim); letter-spacing: .12em; }
 .debug-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .debug-panel button { min-height: 32px; padding: 6px 8px; font-size: .72rem; }
 .debug-task-row { display: grid; grid-template-columns: 1.7fr 1fr auto auto; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px dotted var(--line); }
 .debug-task-row button { min-height: 28px; }
-.debug-empty { color: var(--neutral); padding: 6px 0; }
+.debug-empty { padding: 6px 0; color: var(--neutral); }
 
 @media (max-width: 1500px) {
   :root {
     --status-width: 280px;
     --log-width: 280px;
     --inner-panel-width: 180px;
-    --action-area-height: 180px;
+    --action-area-height: 540px;
   }
   .action-grid button { flex-basis: 128px; width: 128px; min-width: 128px; max-width: 128px; }
 }
@@ -418,10 +412,16 @@ button.taskbar-review strong { color: var(--green-bright); }
   #systemScreen, #systemScreen.tasks-visible { padding-top: calc(var(--top-shell-height) + 10px); }
   .system-status, .activity-log { position: static; width: auto; max-height: 220px; margin: 0 10px 10px; border: 1px solid var(--line); }
   .running-tasks-bar { left: 10px; right: 10px; }
-  .workspace { margin: 0 10px; height: auto; display: block; overflow: visible; }
+  .workspace, .workspace.control-collapsed, .workspace.resources-collapsed, .workspace.actions-collapsed {
+    margin: 0 10px;
+    height: auto;
+    display: block;
+    overflow: visible;
+  }
   .inner-panel { height: auto; max-height: 220px; margin-bottom: 10px; }
-  .center-workspace { min-height: 420px; margin-bottom: 10px; }
-  .action-area { height: 220px; margin-bottom: 10px; }
+  .center-workspace { min-height: 360px; margin-bottom: 10px; }
+  .action-area { height: 360px; margin-bottom: 10px; }
+  .workspace.actions-collapsed .action-area { display: none; }
 }
 
 @media (max-width: 600px) {
