@@ -1,4 +1,5 @@
 const SAVE_KEY = "spark-game-save-v1";
+const SAVE_VERSION = 6;
 
 function hasSaveGame() {
   return Boolean(localStorage.getItem(SAVE_KEY));
@@ -21,28 +22,86 @@ function mergeState(target, source) {
   }
 }
 
-function migrateSavedScreenHtml(html) {
-  return (html || "")
-    .replace(/Required interface\s*\.*\s*REPAIR DRONE/g, "Required ..................... REPAIR DRONE")
-    .replace(/Source identification\s*\.*\s*UNKNOWN/g, "Source ......................... UNKNOWN")
-    .replace(/Source\s*\.*\s*UNKNOWN/g, "Source ......................... UNKNOWN");
+function canonicalStateSnapshot() {
+  const snapshot = JSON.parse(JSON.stringify(state));
+
+  // Runtime/transient state is never persisted.
+  delete snapshot.isBusy;
+  delete snapshot.isShuttingDown;
+
+  // Derived values are reconstructed from canonical state/config.
+  delete snapshot.powerGenerationMax;
+  if (snapshot.status) {
+    delete snapshot.status.systemIntegrity;
+    delete snapshot.status.memoryIntegrity;
+  }
+
+  return snapshot;
+}
+
+function normalizeLoadedState() {
+  state.isBusy = false;
+  state.isShuttingDown = false;
+  state.powerGenerationMax = GAME_CONFIG.generationStart;
+  state.status.memoryIntegrity = Math.round((state.memory / state.memoryMax) * 100);
+  const integrity = calculateSystemIntegrity();
+  state.status.systemIntegrity = integrity === null ? 0 : integrity;
+
+  if (state.status.backupPower === "RESTART REQUIRED") state.status.backupPower = "STOPPED";
+  if (state.progression.systemDiagnosticsComplete) state.revealed.systemTime = true;
+  if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) state.progression.taskbarUnlocked = true;
+  if (state.progression.firstResetSeen) state.progression.navigationUnlocked = true;
+  if (state.diagnostics.power) state.progression.controlPanelUnlocked = true;
+  if (state.actions.archive01Repaired) state.progression.processorArrayKnown = true;
+
+  if (state.actions.backupRestarted) {
+    state.controls.backupGeneratorUnlocked = true;
+    state.progression.secondaryResourcesUnlocked = true;
+    if (state.controls.backupGeneratorOn) state.status.backupPower = "ONLINE";
+  }
+
+  for (const task of state.runningTasks || []) {
+    const definition = TASK_DEFINITIONS[task.key];
+    if (!definition) continue;
+    task.durationSeconds = task.durationSeconds || definition.duration || Math.max(1, Number(task.remainingSeconds || 1));
+    task.review = Boolean(definition.review);
+    if (task.review && Number(task.remainingSeconds || 0) <= 0) {
+      task.remainingSeconds = 0;
+      task.status = "REVIEW";
+    }
+  }
+
+  if (state.progression.systemDiagnosticsComplete && !state.timelineEntries.length) {
+    state.timelineEntries.push({ timeSeconds: 0, text: "SYSTEM BOOT" });
+  }
+}
+
+function buildSavePayload() {
+  return {
+    version: SAVE_VERSION,
+    savedAt: Date.now(),
+    state: canonicalStateSnapshot()
+  };
 }
 
 function saveGame() {
   if (!state.progression.hasBooted) return;
+  localStorage.setItem(SAVE_KEY, JSON.stringify(buildSavePayload()));
+}
 
-  const savedState = JSON.parse(JSON.stringify(state));
-  savedState.isBusy = false;
-  savedState.isShuttingDown = false;
+function importStatePayload(payload) {
+  if (!payload || typeof payload !== "object" || !payload.state) return false;
 
-  const payload = {
-    version: 5,
-    savedAt: Date.now(),
-    state: savedState,
-    mainScreenHtml: terminal.innerHTML
-  };
+  resetStateToDefaults();
+  mergeState(state, payload.state);
 
-  localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+  // Legacy saves stored the Main Screen as HTML. Convert it once to a report id.
+  if (!state.ui?.currentReportKey && payload.mainScreenHtml) {
+    state.ui.currentReportKey = inferReportKeyFromLegacyHtml(payload.mainScreenHtml);
+  }
+
+  normalizeLoadedState();
+  return true;
 }
 
 function loadSaveGame() {
@@ -51,91 +110,12 @@ function loadSaveGame() {
 
   try {
     const payload = JSON.parse(raw);
-    mergeState(state, payload.state);
-    state.isBusy = false;
-    state.isShuttingDown = false;
+    if (!importStatePayload(payload)) return false;
 
-    let migrated = false;
-
-    if (state.status.backupPower === "RESTART REQUIRED") {
-      state.status.backupPower = "STOPPED";
-      migrated = true;
+    // Any legacy/older payload is immediately rewritten in canonical v6 form.
+    if (payload.version !== SAVE_VERSION || payload.mainScreenHtml !== undefined) {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(buildSavePayload()));
     }
-
-    if (state.progression.systemDiagnosticsComplete && !state.revealed.systemTime) {
-      state.revealed.systemTime = true;
-      migrated = true;
-    }
-
-    if ((state.progression.systemDiagnosticsComplete || state.runningTasks.length) && !state.progression.taskbarUnlocked) {
-      state.progression.taskbarUnlocked = true;
-      migrated = true;
-    }
-
-    for (const task of state.runningTasks || []) {
-      const definition = TASK_DEFINITIONS[task.key];
-      if (!definition) continue;
-
-      if (!task.durationSeconds) {
-        task.durationSeconds = definition.duration || Math.max(1, Number(task.remainingSeconds || 1));
-        migrated = true;
-      }
-
-      const shouldReview = Boolean(definition.review);
-      if (task.review !== shouldReview) {
-        task.review = shouldReview;
-        migrated = true;
-      }
-
-      if (shouldReview && Number(task.remainingSeconds || 0) <= 0 && task.status !== "REVIEW") {
-        task.remainingSeconds = 0;
-        task.status = "REVIEW";
-        migrated = true;
-      }
-    }
-
-    if (state.progression.systemDiagnosticsComplete && !state.timelineEntries.length) {
-      state.timelineEntries.push({ timeSeconds: 0, text: "SYSTEM BOOT" });
-      migrated = true;
-    }
-
-    if (state.progression.firstResetSeen && !state.progression.navigationUnlocked) {
-      state.progression.navigationUnlocked = true;
-      migrated = true;
-    }
-
-    if (state.diagnostics.power && !state.progression.controlPanelUnlocked) {
-      state.progression.controlPanelUnlocked = true;
-      migrated = true;
-    }
-
-    if (state.actions.archive01Repaired && !state.progression.processorArrayKnown) {
-      state.progression.processorArrayKnown = true;
-      migrated = true;
-    }
-
-    if (state.actions.backupRestarted) {
-      state.controls.backupGeneratorUnlocked = true;
-      state.progression.secondaryResourcesUnlocked = true;
-      if (state.status.backupPower !== "ONLINE" && state.controls.backupGeneratorOn) state.status.backupPower = "ONLINE";
-      migrated = true;
-    }
-
-    const originalHtml = payload.mainScreenHtml || "";
-    const migratedHtml = migrateSavedScreenHtml(originalHtml);
-    terminal.innerHTML = migratedHtml;
-
-    if (migratedHtml !== originalHtml) {
-      payload.mainScreenHtml = migratedHtml;
-      migrated = true;
-    }
-
-    if (migrated) {
-      payload.version = 5;
-      payload.state = JSON.parse(JSON.stringify(state));
-      localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
-    }
-
     return true;
   } catch (error) {
     console.error("Could not load save game:", error);
@@ -154,12 +134,7 @@ function configureStartMenu() {
   newGameButton.classList.toggle("hidden", !saveExists);
 }
 
-function restoreSavedGame() {
-  if (!loadSaveGame()) {
-    configureStartMenu();
-    return;
-  }
-
+function restoreLoadedStateToScreen() {
   bootScreen.classList.add("hidden");
   standbyScreen.classList.add("hidden");
   systemScreen.classList.remove("hidden");
@@ -171,13 +146,18 @@ function restoreSavedGame() {
 
   refreshInterfaceFromState();
   refreshShellPanels();
+  renderCurrentMainScreen();
 
-  if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) {
-    startRuntimeClock();
+  if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) startRuntimeClock();
+  if (state.progression.systemDiagnosticsComplete) startPowerCycle();
+}
+
+function restoreSavedGame() {
+  if (!loadSaveGame()) {
+    configureStartMenu();
+    return;
   }
-  if (state.progression.systemDiagnosticsComplete) {
-    startPowerCycle();
-  }
+  restoreLoadedStateToScreen();
 }
 
 function startNewGame() {
