@@ -23,9 +23,12 @@ body { margin:0; min-height:100vh; background:var(--bg); color:var(--green); fon
 button { font:inherit; color:var(--green); background:#071007; border:1px solid var(--dim); padding:9px 12px; cursor:pointer; min-height:42px; }
 button:hover:not(:disabled),button:focus-visible:not(:disabled){ background:#0d190d; border-color:var(--green); }
 button:disabled{ opacity:.38; cursor:not-allowed; }
-button.power-insufficient,button.requirement-locked{ border-color:var(--err); opacity:.58; }
-button.task-active{ border-color:var(--warn); color:var(--warn); opacity:.62; }
-button.planned-action{ color:var(--neutral); border-style:dashed; }
+button.power-insufficient,button.requirement-locked{ border-color:var(--err); color:var(--err); opacity:.72; }
+button.task-active{ border-color:var(--warn); color:var(--warn); opacity:.72; }
+button.planned-action{ color:var(--green); border-style:solid; border-color:var(--green); }
+button.planned-action.power-insufficient,
+button.planned-action.requirement-locked{ color:var(--err); border-color:var(--err); border-style:solid; }
+button.planned-action.task-active{ color:var(--warn); border-color:var(--warn); }
 button[data-special-requirement]::after{ content:"REQ: " attr(data-special-requirement); display:block; margin-top:4px; color:var(--err); font-size:.7rem; letter-spacing:.05em; }
 #bootButton,#continueButton,#newGameButton{ font-size:1.05rem; letter-spacing:.12em; padding:14px 24px; }
 .hidden{ display:none !important; }
@@ -69,7 +72,7 @@ button[data-special-requirement]::after{ content:"REQ: " attr(data-special-requi
 .taskbar-divider{ color:var(--dim); flex:0 0 auto; }
 .taskbar-empty{ color:var(--dim); letter-spacing:.1em; }
 .task-progress{ grid-column:1 / -1; display:block; width:100%; height:3px; background:#0a180b; border:1px solid var(--line); overflow:hidden; }
-.task-progress > span{ display:block; height:100%; background:var(--green); box-shadow:0 0 5px rgba(118,255,118,.45); transition:width .25s linear; }
+.task-progress > span{ display:block; height:100%; background:var(--green); box-shadow:0 0 5px rgba(118,255,118,.45); }
 .taskbar-paused .task-progress > span{ background:var(--warn); }
 button.taskbar-review{ min-height:34px; padding:4px 7px; border:1px solid var(--green); background:transparent; color:var(--green); font-size:inherit; letter-spacing:inherit; }
 button.taskbar-review strong{ color:var(--green-bright); }
