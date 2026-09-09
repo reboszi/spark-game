@@ -124,7 +124,14 @@ function renderControlPanel() {
 function renderSecondaryResources() {
   secondaryResourcesPanel.classList.toggle("hidden", !state.progression.secondaryResourcesUnlocked);
   if (!state.progression.secondaryResourcesUnlocked) return;
-  secondaryResourcesContent.innerHTML = `<div class="secondary-resource-row"><span>HYDRAZINE</span><strong class="err">${state.secondaryResources.hydrazineKnown ? state.secondaryResources.hydrazineReserveHidden : "UNKNOWN"}</strong></div>`;
+
+  const trend = state.secondaryResources.hydrazineTrend || "STABLE";
+  const trendClass = trend === "INCREASING" ? "resource-trend-up" : trend === "DECREASING" ? "resource-trend-down" : "resource-trend-stable";
+  const trendIcon = trend === "INCREASING" ? "↑" : trend === "DECREASING" ? "↓" : "·";
+  const value = state.secondaryResources.hydrazineKnown ? state.secondaryResources.hydrazineReserveHidden : "UNKNOWN";
+  const valueClass = state.secondaryResources.hydrazineKnown ? "" : "err";
+
+  secondaryResourcesContent.innerHTML = `<div class="secondary-resource-row ${trendClass}"><span class="secondary-resource-name"><span class="resource-trend-icon">${trendIcon}</span> HYDRAZINE</span><strong class="${valueClass}">${value}</strong></div>`;
 }
 
 function refreshShellPanels() {
@@ -151,6 +158,7 @@ controlContent.addEventListener("click", event => {
   const button = event.target.closest('[data-control="backup"]');
   if (!button || !state.controls.backupGeneratorUnlocked) return;
   state.controls.backupGeneratorOn = !state.controls.backupGeneratorOn;
+  state.secondaryResources.hydrazineTrend = state.controls.backupGeneratorOn ? "DECREASING" : "STABLE";
   state.status.backupPower = state.controls.backupGeneratorOn ? "ONLINE" : "STOPPED";
   addLogEntry(`Backup generator switched ${state.controls.backupGeneratorOn ? "on" : "off"}.`);
   if (!state.controls.backupGeneratorOn && state.powerGeneration <= 0 && state.powerStorage <= 0) void shutdownSystem();
@@ -159,5 +167,6 @@ controlContent.addEventListener("click", event => {
   updateSystemStatus();
   updateTaskBar();
   renderControlPanel();
+  renderSecondaryResources();
   saveGame();
 });
