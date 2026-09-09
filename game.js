@@ -1,4 +1,5 @@
 let powerCycleTimer = null;
+let externalRecoveryTimer = null;
 let preStandbyScreenHtml = "";
 let mainOutputQueue = Promise.resolve();
 
@@ -6,22 +7,54 @@ function getProcessRequirement(button) { return Number(button.dataset.powerRequi
 function canRunProcess(button) { return buttonRequirementsMet(button); }
 function queueMainOutput(renderer) { mainOutputQueue = mainOutputQueue.then(renderer).catch(error => console.error("Could not render task result:", error)); return mainOutputQueue; }
 
+function restoreExternalGeneration() {
+  externalRecoveryTimer = null;
+  state.powerGeneration = GAME_CONFIG.generationStart;
+  resetSystemResetCountdown();
+  addLogEntry("External power generation restored.");
+  resumePausedTasks();
+  updateResources();
+  updateTaskBar();
+  saveGame();
+}
+
+function scheduleExternalGenerationRestore() {
+  if (externalRecoveryTimer) return;
+  externalRecoveryTimer = setTimeout(restoreExternalGeneration, GAME_CONFIG.standbyDurationMs);
+}
+
 function startPowerCycle() {
   if (powerCycleTimer) return;
-  if (state.resetCountdownSeconds <= 0) resetSystemResetCountdown();
+  if (state.resetCountdownSeconds <= 0 && state.powerGeneration > 0) resetSystemResetCountdown();
   powerCycleTimer = setInterval(async () => {
     if (state.isShuttingDown) return;
+
     if (state.powerGeneration > 0) {
-      state.powerGeneration -= 1;
+      state.powerGeneration = Math.max(0, state.powerGeneration - 1);
       pauseTasksForPower();
       updateResources();
       updateTaskBar();
       saveGame();
     }
-    if (getTotalGeneration() <= 0 && state.powerStorage <= 0) await shutdownSystem();
+
+    if (state.powerGeneration > 0) return;
+
+    // External generation reaching zero is independent of task state.
+    // Backup/storage may keep the system alive, but the external cycle still restarts.
+    if (state.controls?.backupGeneratorOn || state.powerStorage > 0) {
+      scheduleExternalGenerationRestore();
+      return;
+    }
+
+    await shutdownSystem();
   }, GAME_CONFIG.generationTickMs);
 }
-function stopPowerCycle() { if (!powerCycleTimer) return; clearInterval(powerCycleTimer); powerCycleTimer = null; }
+
+function stopPowerCycle() {
+  if (!powerCycleTimer) return;
+  clearInterval(powerCycleTimer);
+  powerCycleTimer = null;
+}
 
 async function bootSequence() {
   bootButton.disabled = true; continueButton.disabled = true; newGameButton.disabled = true;
@@ -40,29 +73,53 @@ async function bootSequence() {
 
 async function shutdownSystem() {
   if (state.isShuttingDown) return;
-  state.isShuttingDown=true; stopPowerCycle(); pauseTasksForPower(); hideRequirements();
+  state.isShuttingDown=true;
+  stopPowerCycle();
+  if (externalRecoveryTimer) { clearTimeout(externalRecoveryTimer); externalRecoveryTimer = null; }
+  pauseTasksForPower();
+  hideRequirements();
+
   if (!state.progression.firstResetSeen) {
     state.progression.firstResetSeen = true;
     state.progression.navigationUnlocked = true;
     addTimelineEntry("FIRST SYSTEM RESET");
     addLogEntry("First system reset detected.");
   }
+
   refreshShellPanels();
   preStandbyScreenHtml = terminal.innerHTML;
-  saveGame(); systemScreen.classList.add("hidden"); standbyScreen.classList.remove("hidden");
+  saveGame();
+  systemScreen.classList.add("hidden");
+  standbyScreen.classList.remove("hidden");
   await sleep(GAME_CONFIG.standbyDurationMs);
-  standbyScreen.classList.add("hidden"); systemScreen.classList.remove("hidden");
+  standbyScreen.classList.add("hidden");
+  systemScreen.classList.remove("hidden");
   await beginNextPowerCycle();
 }
 
 async function beginNextPowerCycle() {
-  state.powerGeneration=GAME_CONFIG.generationStart; state.isShuttingDown=false; state.isBusy=false;
-  resetSystemResetCountdown(); resumePausedTasks(); refreshInterfaceFromState(); refreshShellPanels(); updateButtons();
-  clearMainScreen(); systemScreen.classList.add("screen-wake");
-  await typeLine("EXTERNAL POWER DETECTED","status-line",12); await typeLine("POWER GENERATION RESTORED","status-line",12); await typeLine("SYSTEM RESUMING...","warn",14); await sleep(650);
+  state.powerGeneration=GAME_CONFIG.generationStart;
+  state.isShuttingDown=false;
+  state.isBusy=false;
+  resetSystemResetCountdown();
+  resumePausedTasks();
+  refreshInterfaceFromState();
+  refreshShellPanels();
+  updateButtons();
+  clearMainScreen();
+  systemScreen.classList.add("screen-wake");
+  await typeLine("EXTERNAL POWER DETECTED","status-line",12);
+  await typeLine("POWER GENERATION RESTORED","status-line",12);
+  await typeLine("SYSTEM RESUMING...","warn",14);
+  await sleep(650);
   terminal.innerHTML = preStandbyScreenHtml;
-  systemScreen.classList.remove("screen-wake"); void systemScreen.offsetWidth; systemScreen.classList.add("screen-restored"); setTimeout(()=>systemScreen.classList.remove("screen-restored"),900);
-  addLogEntry("External power restored. System resumed."); saveGame(); startPowerCycle();
+  systemScreen.classList.remove("screen-wake");
+  void systemScreen.offsetWidth;
+  systemScreen.classList.add("screen-restored");
+  setTimeout(()=>systemScreen.classList.remove("screen-restored"),900);
+  addLogEntry("External power restored. System resumed.");
+  saveGame();
+  startPowerCycle();
 }
 
 function beginSystemDiagnostics() { if (!state.progression.systemDiagnosticsComplete && !taskByKey("system:diagnostics") && startTask("system:diagnostics")) { systemDiagnosticsButton.disabled = true; clearMainScreen(); void typeLine("SYSTEM DIAGNOSTICS STARTED", "status-line", 10); } }
