@@ -145,6 +145,13 @@ function runtimeTick() {
   const deltaSeconds = Math.max(0, (now - runtimeLastTickAt) / 1000);
   runtimeLastTickAt = now;
 
+  if (deltaSeconds > GAME_CONFIG.maxActiveTickGapSeconds) {
+    state.accumulatedTimeSeconds += deltaSeconds;
+    refreshDynamicUi();
+    saveGame();
+    return;
+  }
+
   advanceGameSimulation(deltaSeconds);
   refreshDynamicUi();
 }
