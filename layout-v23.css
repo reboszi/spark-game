@@ -1,9 +1,12 @@
 .workspace {
   min-height: calc(100vh - var(--top-shell-height));
+  height: calc(100vh - var(--top-shell-height));
   display: grid;
   grid-template-columns: minmax(180px, 1fr) minmax(560px, 820px) minmax(180px, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) 210px;
   align-items: stretch;
+  gap: 0 12px;
+  overflow: hidden;
 }
 
 .control-panel {
@@ -23,7 +26,23 @@
   min-height: 0;
   height: 100%;
   flex: 1 1 auto;
-  justify-content: center;
+  justify-content: stretch;
+  display: flex;
+  flex-direction: column;
+}
+
+.center-workspace .navigation-panel {
+  flex: 0 0 auto;
+  margin-bottom: 8px;
+}
+
+.center-workspace .terminal {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+#terminalOutput {
+  min-height: 100%;
 }
 
 .secondary-resources-panel {
@@ -43,23 +62,74 @@
 .action-area {
   grid-column: 1 / -1;
   grid-row: 2;
-  display: block;
   width: 100%;
-  padding-top: 12px;
+  min-height: 0;
+  height: 210px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 8px 10px;
+  margin-top: 0;
+  border-top: 1px solid var(--line);
+  background: #040a04;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dim) #040a04;
+}
+
+.action-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.action-area::-webkit-scrollbar-track {
+  background: #040a04;
+}
+
+.action-area::-webkit-scrollbar-thumb {
+  background: var(--dim);
 }
 
 .action-area .action-panel {
-  margin-top: 10px;
+  margin: 0 0 8px;
   width: 100%;
 }
 
-.action-area .action-panel:first-child {
-  margin-top: 0;
+.action-area .action-panel:last-child {
+  margin-bottom: 0;
+}
+
+.action-area .action-panel summary {
+  padding: 6px 9px;
+  font-size: .72rem;
 }
 
 .action-area .action-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
   width: 100%;
+  padding: 7px 8px;
+}
+
+.action-area .action-grid button {
+  flex: 0 0 154px;
+  width: 154px;
+  min-width: 154px;
+  max-width: 154px;
+  min-height: 42px;
+  height: 42px;
+  padding: 5px 7px;
+  font-size: .72rem;
+  line-height: 1.15;
+  letter-spacing: .015em;
+  white-space: normal;
+  text-align: center;
+  text-transform: none;
+}
+
+button[data-special-requirement]::after {
+  margin-top: 2px;
+  font-size: .58rem;
+  line-height: 1;
 }
 
 .running-tasks-bar {
@@ -122,12 +192,26 @@
 @media (max-width:1500px) {
   .workspace {
     grid-template-columns: minmax(150px, 1fr) minmax(540px, 720px) minmax(150px, 1fr);
+    grid-template-rows: minmax(0, 1fr) 190px;
+  }
+
+  .action-area {
+    height: 190px;
+  }
+
+  .action-area .action-grid button {
+    flex-basis: 145px;
+    width: 145px;
+    min-width: 145px;
+    max-width: 145px;
   }
 }
 
 @media (max-width:1180px) {
   .workspace {
     display: block;
+    height: auto;
+    overflow: visible;
   }
 
   .inner-panel {
@@ -135,7 +219,8 @@
     height: auto;
   }
 
-  .action-area .action-panel {
+  .action-area {
+    height: 220px;
     margin-top: 12px;
   }
 
@@ -148,6 +233,13 @@
 
 @media (max-width:600px) {
   .action-area .action-grid {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .action-area .action-grid button {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
   }
 }
