@@ -1,21 +1,23 @@
 const SAVE_KEY = "spark-game-save-v1";
-const SAVE_VERSION = 8;
+const SAVE_VERSION = 9;
 
 function hasSaveGame() {
   return Boolean(localStorage.getItem(SAVE_KEY));
 }
 
-function mergeState(target, source) {
+function mergeKnownState(target, source) {
   for (const [key, value] of Object.entries(source || {})) {
+    if (!(key in target)) continue;
+
     if (
-      value &&
-      typeof value === "object" &&
-      !Array.isArray(value) &&
-      target[key] &&
-      typeof target[key] === "object" &&
-      !Array.isArray(target[key])
+      value
+      && typeof value === "object"
+      && !Array.isArray(value)
+      && target[key]
+      && typeof target[key] === "object"
+      && !Array.isArray(target[key])
     ) {
-      mergeState(target[key], value);
+      mergeKnownState(target[key], value);
     } else {
       target[key] = value;
     }
@@ -25,10 +27,9 @@ function mergeState(target, source) {
 function canonicalStateSnapshot() {
   const snapshot = JSON.parse(JSON.stringify(state));
 
-  delete snapshot.isBusy;
   delete snapshot.isShuttingDown;
-  delete snapshot.powerGenerationMax;
-  delete snapshot.lastSeenAt;
+  delete snapshot.revealed;
+  delete snapshot.statusRevealed;
 
   if (snapshot.secondaryResources) delete snapshot.secondaryResources.hydrazineTrend;
 
@@ -48,23 +49,29 @@ function canonicalStateSnapshot() {
   }
 
   if (snapshot.controls) delete snapshot.controls.backupGeneratorUnlocked;
-
   return snapshot;
 }
 
 function normalizeLoadedState() {
-  state.isBusy = false;
   state.isShuttingDown = false;
-  state.powerGenerationMax = GAME_CONFIG.generationStart;
-  state.powerGenerationTickProgressSeconds = Math.max(0, Number(state.powerGenerationTickProgressSeconds || 0));
-  state.externalRecoverySecondsRemaining = Math.max(0, Number(state.externalRecoverySecondsRemaining || 0));
   state.accumulatedTimeSeconds = Math.max(0, Number(state.accumulatedTimeSeconds || 0));
-  state.lastSeenAt = Date.now();
 
-  if (!state.ui) state.ui = { currentReportKey: null, currentView: "MAIN" };
-  if (!state.ui.currentView) state.ui.currentView = "MAIN";
-  if (!state.secondaryResources) state.secondaryResources = JSON.parse(JSON.stringify(INITIAL_STATE.secondaryResources));
-  state.secondaryResources.hydrazineTrend = state.controls?.backupGeneratorOn ? "DECREASING" : "STABLE";
+  const tickSeconds = GAME_CONFIG.generationTickMs / 1000;
+  state.powerGeneration = Math.max(0, Math.min(GAME_CONFIG.generationStart, Number(state.powerGeneration || 0)));
+  state.powerGenerationTickProgressSeconds = Math.max(0, Number(state.powerGenerationTickProgressSeconds || 0)) % tickSeconds;
+  state.externalRecoverySecondsRemaining = Math.max(0, Number(state.externalRecoverySecondsRemaining || 0));
+  if (state.powerGeneration > 0) state.externalRecoverySecondsRemaining = 0;
+
+  state.memory = Math.max(0, Math.min(state.memoryMax, Number(state.memory || 0)));
+  state.processingPower = Math.max(0, Math.min(state.processingPowerMax, Number(state.processingPower || 0)));
+  state.powerStorage = Math.max(0, Math.min(state.powerStorageMax, Number(state.powerStorage || 0)));
+
+  state.secondaryResources.hydrazineReserveHidden = Math.max(0, Number(state.secondaryResources.hydrazineReserveHidden || 0));
+  state.secondaryResources.hydrazineBurnSeconds = Math.max(0, Number(state.secondaryResources.hydrazineBurnSeconds || 0));
+  state.secondaryResources.hydrazineTrend = state.controls.backupGeneratorOn ? "DECREASING" : "STABLE";
+
+  if (!state.actions.backupRestarted) state.controls.backupGeneratorOn = false;
+  state.controls.backupGeneratorUnlocked = Boolean(state.actions.backupRestarted);
 
   state.status.memoryIntegrity = Math.round((state.memory / state.memoryMax) * 100);
   state.status.archive01 = state.actions.archive01Repaired ? "RECOVERED" : "CORRUPTED";
@@ -78,24 +85,55 @@ function normalizeLoadedState() {
   state.progression.controlPanelUnlocked = Boolean(state.diagnostics.power);
   state.progression.secondaryResourcesUnlocked = Boolean(state.actions.backupRestarted);
   state.progression.processorArrayKnown = Boolean(state.actions.archive01Repaired);
-  state.controls.backupGeneratorUnlocked = Boolean(state.actions.backupRestarted);
 
-  if (state.progression.systemDiagnosticsComplete) state.revealed.systemTime = true;
+  state.revealed.systemTime = Boolean(state.progression.systemDiagnosticsComplete);
+  state.revealed.powerGeneration = Boolean(state.progression.systemDiagnosticsComplete);
+  state.revealed.processingPower = Boolean(state.progression.systemDiagnosticsComplete);
+  state.revealed.memory = Boolean(state.diagnostics.memory);
+  state.revealed.powerStorage = Boolean(state.diagnostics.power);
 
-  for (const task of state.runningTasks || []) {
-    const definition = TASK_DEFINITIONS[task.key];
-    if (!definition) continue;
-    task.durationSeconds = task.durationSeconds || definition.duration || Math.max(1, Number(task.remainingSeconds || 1));
-    task.review = Boolean(definition.review);
-    if (task.review && Number(task.remainingSeconds || 0) <= 0) {
-      task.remainingSeconds = 0;
-      task.status = "REVIEW";
-    }
-  }
+  state.statusRevealed.operatingSystem = Boolean(state.progression.systemDiagnosticsComplete);
+  state.statusRevealed.emergencyPower = Boolean(state.progression.systemDiagnosticsComplete);
+  state.statusRevealed.primaryPower = Boolean(state.diagnostics.power);
+  state.statusRevealed.backupPower = Boolean(state.diagnostics.power);
+  state.statusRevealed.storageRecovered = Boolean(state.diagnostics.memory);
+  state.statusRevealed.archive01 = Boolean(state.diagnostics.memory);
+  state.statusRevealed.sensors = Boolean(state.diagnostics.io);
+  state.statusRevealed.manipulators = Boolean(state.diagnostics.io);
+  state.statusRevealed.communications = Boolean(state.diagnostics.io);
+  state.statusRevealed.unknownInterfaces = Boolean(state.diagnostics.io);
+  state.statusRevealed.systemIntegrity = Object.values(state.diagnostics).every(Boolean);
+
+  state.runningTasks = (Array.isArray(state.runningTasks) ? state.runningTasks : [])
+    .filter(task => task && TASK_DEFINITIONS[task.key])
+    .map(task => {
+      const definition = TASK_DEFINITIONS[task.key];
+      const duration = Math.max(1, Number(task.durationSeconds || definition.duration));
+      const remaining = Math.max(0, Math.min(duration, Number(task.remainingSeconds ?? duration)));
+      const review = Boolean(definition.review);
+      let status = ["RUNNING", "PAUSED", "REVIEW"].includes(task.status) ? task.status : "RUNNING";
+      if (review && remaining <= 0) status = "REVIEW";
+      if (!review && status === "REVIEW") status = "RUNNING";
+      return {
+        id: task.id || `${task.key}:${Date.now()}:${Math.random().toString(36).slice(2, 7)}`,
+        key: task.key,
+        label: definition.label,
+        durationSeconds: duration,
+        remainingSeconds: remaining,
+        power: definition.power,
+        status,
+        review
+      };
+    });
 
   if (state.progression.systemDiagnosticsComplete && !state.timelineEntries.length) {
     state.timelineEntries.push({ timeSeconds: 0, text: "SYSTEM BOOT" });
   }
+
+  if (!state.ui || !["MAIN", "TIMELINE"].includes(state.ui.currentView)) {
+    state.ui = { currentReportKey: null, currentView: "MAIN" };
+  }
+  if (state.ui.currentReportKey && !REPORTS[state.ui.currentReportKey]) state.ui.currentReportKey = null;
 }
 
 function buildSavePayload() {
@@ -116,9 +154,9 @@ function importStatePayload(payload) {
   if (!payload || typeof payload !== "object" || !payload.state) return false;
 
   resetStateToDefaults();
-  mergeState(state, payload.state);
+  mergeKnownState(state, payload.state);
 
-  if (!state.ui?.currentReportKey && payload.mainScreenHtml) {
+  if (!state.ui.currentReportKey && payload.mainScreenHtml) {
     state.ui.currentReportKey = inferReportKeyFromLegacyHtml(payload.mainScreenHtml);
   }
 
@@ -135,8 +173,7 @@ function loadSaveGame() {
     if (!importStatePayload(payload)) return false;
 
     if (state.progression.hasBooted && Number(payload.savedAt) > 0) {
-      const offlineSeconds = Math.max(0, (Date.now() - Number(payload.savedAt)) / 1000);
-      state.accumulatedTimeSeconds += offlineSeconds;
+      state.accumulatedTimeSeconds += Math.max(0, (Date.now() - Number(payload.savedAt)) / 1000);
     }
 
     if (payload.version !== SAVE_VERSION || payload.mainScreenHtml !== undefined) {
@@ -171,7 +208,6 @@ function restoreLoadedStateToScreen() {
   }
 
   refreshInterfaceFromState();
-  refreshShellPanels();
   applyCurrentView();
 
   if (!document.hidden) {
