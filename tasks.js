@@ -126,9 +126,7 @@ function reviewTask(taskId) {
   updateButtons();
   saveGame();
 
-  // Reports are explicitly user-opened views. Render immediately rather than
-  // enqueueing behind other terminal animations.
-  if (REPORTS[reportKey]) void renderReport(reportKey, false);
+  if (REPORTS[reportKey]) void renderReport(reportKey, true);
 }
 
 function tickTasks(deltaSeconds = 1) {
