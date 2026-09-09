@@ -53,7 +53,7 @@ function startTask(key) {
     review: Boolean(definition.review)
   });
 
-  state.progression.taskbarUnlocked = true;
+  syncDerivedState();
   startRuntimeClock();
   addLogEntry(`Started ${definition.label.toLowerCase()}.`);
   refreshDynamicUi();
@@ -92,6 +92,7 @@ function resumePausedTasks() {
 
 function removeTask(taskId) {
   state.runningTasks = state.runningTasks.filter(task => task.id !== taskId);
+  syncDerivedState();
 }
 
 function finishTask(task, { refresh = true, persist = true } = {}) {
