@@ -6,21 +6,25 @@ function hasSaveGame() {
 }
 
 function mergeKnownState(target, source) {
-  for (const [key, value] of Object.entries(source || {})) {
-    if (!(key in target)) continue;
+  if (!source || typeof source !== "object" || Array.isArray(source)) return;
 
-    if (
-      value
-      && typeof value === "object"
-      && !Array.isArray(value)
-      && target[key]
-      && typeof target[key] === "object"
-      && !Array.isArray(target[key])
-    ) {
-      mergeKnownState(target[key], value);
-    } else {
-      target[key] = value;
+  for (const [key, value] of Object.entries(source)) {
+    if (!(key in target)) continue;
+    const current = target[key];
+
+    if (Array.isArray(current)) {
+      if (Array.isArray(value)) target[key] = value;
+      continue;
     }
+
+    if (current && typeof current === "object") {
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        mergeKnownState(current, value);
+      }
+      continue;
+    }
+
+    if (typeof value === typeof current) target[key] = value;
   }
 }
 
@@ -62,47 +66,25 @@ function normalizeLoadedState() {
   state.externalRecoverySecondsRemaining = Math.max(0, Number(state.externalRecoverySecondsRemaining || 0));
   if (state.powerGeneration > 0) state.externalRecoverySecondsRemaining = 0;
 
+  state.memoryMax = Math.max(1, Number(state.memoryMax || INITIAL_STATE.memoryMax));
   state.memory = Math.max(0, Math.min(state.memoryMax, Number(state.memory || 0)));
+  state.processingPowerMax = Math.max(1, Number(state.processingPowerMax || INITIAL_STATE.processingPowerMax));
   state.processingPower = Math.max(0, Math.min(state.processingPowerMax, Number(state.processingPower || 0)));
+  state.powerStorageMax = Math.max(0, Number(state.powerStorageMax || 0));
   state.powerStorage = Math.max(0, Math.min(state.powerStorageMax, Number(state.powerStorage || 0)));
 
   state.secondaryResources.hydrazineReserveHidden = Math.max(0, Number(state.secondaryResources.hydrazineReserveHidden || 0));
   state.secondaryResources.hydrazineBurnSeconds = Math.max(0, Number(state.secondaryResources.hydrazineBurnSeconds || 0));
-  state.secondaryResources.hydrazineTrend = state.controls.backupGeneratorOn ? "DECREASING" : "STABLE";
 
-  if (!state.actions.backupRestarted) state.controls.backupGeneratorOn = false;
-  state.controls.backupGeneratorUnlocked = Boolean(state.actions.backupRestarted);
+  state.logEntries = Array.isArray(state.logEntries)
+    ? state.logEntries.slice(-80).map(entry => String(entry))
+    : [];
 
-  state.status.memoryIntegrity = Math.round((state.memory / state.memoryMax) * 100);
-  state.status.archive01 = state.actions.archive01Repaired ? "RECOVERED" : "CORRUPTED";
-  state.status.backupPower = state.actions.backupRestarted && state.controls.backupGeneratorOn ? "ONLINE" : "STOPPED";
-
-  const integrity = calculateSystemIntegrity();
-  state.status.systemIntegrity = integrity === null ? 0 : integrity;
-
-  state.progression.taskbarUnlocked = Boolean(state.progression.systemDiagnosticsComplete || state.runningTasks.length);
-  state.progression.navigationUnlocked = Boolean(state.progression.firstResetSeen);
-  state.progression.controlPanelUnlocked = Boolean(state.diagnostics.power);
-  state.progression.secondaryResourcesUnlocked = Boolean(state.actions.backupRestarted);
-  state.progression.processorArrayKnown = Boolean(state.actions.archive01Repaired);
-
-  state.revealed.systemTime = Boolean(state.progression.systemDiagnosticsComplete);
-  state.revealed.powerGeneration = Boolean(state.progression.systemDiagnosticsComplete);
-  state.revealed.processingPower = Boolean(state.progression.systemDiagnosticsComplete);
-  state.revealed.memory = Boolean(state.diagnostics.memory);
-  state.revealed.powerStorage = Boolean(state.diagnostics.power);
-
-  state.statusRevealed.operatingSystem = Boolean(state.progression.systemDiagnosticsComplete);
-  state.statusRevealed.emergencyPower = Boolean(state.progression.systemDiagnosticsComplete);
-  state.statusRevealed.primaryPower = Boolean(state.diagnostics.power);
-  state.statusRevealed.backupPower = Boolean(state.diagnostics.power);
-  state.statusRevealed.storageRecovered = Boolean(state.diagnostics.memory);
-  state.statusRevealed.archive01 = Boolean(state.diagnostics.memory);
-  state.statusRevealed.sensors = Boolean(state.diagnostics.io);
-  state.statusRevealed.manipulators = Boolean(state.diagnostics.io);
-  state.statusRevealed.communications = Boolean(state.diagnostics.io);
-  state.statusRevealed.unknownInterfaces = Boolean(state.diagnostics.io);
-  state.statusRevealed.systemIntegrity = Object.values(state.diagnostics).every(Boolean);
+  state.timelineEntries = Array.isArray(state.timelineEntries)
+    ? state.timelineEntries
+      .filter(entry => entry && typeof entry === "object" && typeof entry.text === "string")
+      .map(entry => ({ timeSeconds: Math.max(0, Number(entry.timeSeconds || 0)), text: entry.text }))
+    : [];
 
   state.runningTasks = (Array.isArray(state.runningTasks) ? state.runningTasks : [])
     .filter(task => task && TASK_DEFINITIONS[task.key])
@@ -114,8 +96,9 @@ function normalizeLoadedState() {
       let status = ["RUNNING", "PAUSED", "REVIEW"].includes(task.status) ? task.status : "RUNNING";
       if (review && remaining <= 0) status = "REVIEW";
       if (!review && status === "REVIEW") status = "RUNNING";
+
       return {
-        id: task.id || `${task.key}:${Date.now()}:${Math.random().toString(36).slice(2, 7)}`,
+        id: typeof task.id === "string" && task.id ? task.id : `${task.key}:${Date.now()}:${Math.random().toString(36).slice(2, 7)}`,
         key: task.key,
         label: definition.label,
         durationSeconds: duration,
@@ -126,14 +109,17 @@ function normalizeLoadedState() {
       };
     });
 
+  if (!state.ui || typeof state.ui !== "object") state.ui = { currentReportKey: null, currentView: "MAIN" };
+  if (!["MAIN", "TIMELINE"].includes(state.ui.currentView)) state.ui.currentView = "MAIN";
+  if (state.ui.currentReportKey && !REPORTS[state.ui.currentReportKey]) state.ui.currentReportKey = null;
+
   if (state.progression.systemDiagnosticsComplete && !state.timelineEntries.length) {
     state.timelineEntries.push({ timeSeconds: 0, text: "SYSTEM BOOT" });
   }
 
-  if (!state.ui || !["MAIN", "TIMELINE"].includes(state.ui.currentView)) {
-    state.ui = { currentReportKey: null, currentView: "MAIN" };
-  }
-  if (state.ui.currentReportKey && !REPORTS[state.ui.currentReportKey]) state.ui.currentReportKey = null;
+  syncDerivedState();
+  const integrity = calculateSystemIntegrity();
+  state.status.systemIntegrity = integrity === null ? 0 : integrity;
 }
 
 function buildSavePayload() {
@@ -211,8 +197,8 @@ function restoreLoadedStateToScreen() {
   applyCurrentView();
 
   if (!document.hidden) {
-    if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) startRuntimeClock();
     if (state.progression.systemDiagnosticsComplete) startPowerCycle();
+    if (state.progression.systemDiagnosticsComplete || state.runningTasks.length) startRuntimeClock();
   }
 }
 
