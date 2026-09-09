@@ -25,7 +25,8 @@ const state = {
   isShuttingDown: false,
 
   ui: {
-    currentReportKey: null
+    currentReportKey: null,
+    currentView: "MAIN"
   },
 
   progression: {
