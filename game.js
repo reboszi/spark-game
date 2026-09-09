@@ -64,11 +64,11 @@ async function shutdownSystem() {
 
   if (!state.progression.firstResetSeen) {
     state.progression.firstResetSeen = true;
-    state.progression.navigationUnlocked = true;
     addTimelineEntry("FIRST SYSTEM RESET");
     addLogEntry("First system reset detected.");
   }
 
+  syncDerivedState();
   refreshGameUi();
   saveGame();
   systemScreen.classList.add("hidden");
@@ -85,6 +85,7 @@ async function beginNextPowerCycle() {
   state.isShuttingDown = false;
   resetSystemResetCountdown();
   resumePausedTasks();
+  syncDerivedState();
   refreshInterfaceFromState();
 
   clearMainScreen();
@@ -140,16 +141,12 @@ function beginPlanned(type, button) {
 }
 
 function applyTaskResult(key, renderOutput = true) {
+  const hadIntegrityAssessment = state.statusRevealed.systemIntegrity;
   if (REPORTS[key]) state.ui.currentReportKey = key;
 
   switch (key) {
     case "system:diagnostics":
-      state.revealed.systemTime = true;
-      state.revealed.powerGeneration = true;
-      state.revealed.processingPower = true;
       state.progression.systemDiagnosticsComplete = true;
-      state.statusRevealed.operatingSystem = true;
-      state.statusRevealed.emergencyPower = true;
       if (!state.timelineEntries.length) addTimelineEntry("SYSTEM BOOT", 0);
       addLogEntry("Ran system diagnostics.");
       addLogEntry("System clock initialized.");
@@ -161,33 +158,20 @@ function applyTaskResult(key, renderOutput = true) {
       break;
 
     case "diag:memory":
-      state.revealed.memory = true;
       state.status.storageRecovered = Math.max(2, state.status.storageRecovered);
-      state.statusRevealed.storageRecovered = true;
-      state.statusRevealed.archive01 = true;
       state.diagnostics.memory = true;
-      updateMemoryIntegrity();
       addLogEntry("Ran memory diagnostics.");
       addLogEntry("Detected Corrupted Data Archive 01.");
       break;
 
     case "diag:power":
-      state.statusRevealed.primaryPower = true;
-      state.statusRevealed.backupPower = true;
-      state.statusRevealed.emergencyPower = true;
-      state.revealed.powerStorage = true;
       state.diagnostics.power = true;
-      state.progression.controlPanelUnlocked = true;
       addLogEntry("Ran power diagnostics.");
       addLogEntry("Primary power diagnostics require a repair drone.");
       addLogEntry("Backup generator identified as Hydrazine Thermal Cell.");
       break;
 
     case "diag:io":
-      state.statusRevealed.sensors = true;
-      state.statusRevealed.manipulators = true;
-      state.statusRevealed.communications = true;
-      state.statusRevealed.unknownInterfaces = true;
       state.diagnostics.io = true;
       addLogEntry("Ran I/O diagnostics.");
       break;
@@ -195,7 +179,6 @@ function applyTaskResult(key, renderOutput = true) {
     case "repair:memory": {
       const gained = 3;
       state.memory = Math.min(state.memoryMax, state.memory + gained);
-      updateMemoryIntegrity();
       addLogEntry(`Defragmented memory: +${gained} usable memory.`);
       break;
     }
@@ -209,8 +192,6 @@ function applyTaskResult(key, renderOutput = true) {
 
     case "repair:archive01":
       state.actions.archive01Repaired = true;
-      state.status.archive01 = "RECOVERED";
-      state.progression.processorArrayKnown = true;
       addTimelineEntry("DATA ARCHIVE 01 RECOVERED");
       addLogEntry("Recovered Data Archive 01.");
       break;
@@ -224,11 +205,7 @@ function applyTaskResult(key, renderOutput = true) {
 
     case "planned:backup":
       state.actions.backupRestarted = true;
-      state.controls.backupGeneratorUnlocked = true;
       state.controls.backupGeneratorOn = true;
-      state.secondaryResources.hydrazineTrend = "DECREASING";
-      state.status.backupPower = "ONLINE";
-      state.progression.secondaryResourcesUnlocked = true;
       addTimelineEntry("BACKUP POWER RESTORED");
       addLogEntry("Backup power restored.");
       break;
@@ -237,17 +214,13 @@ function applyTaskResult(key, renderOutput = true) {
       return false;
   }
 
-  if (Object.values(state.diagnostics).every(Boolean) && !state.statusRevealed.systemIntegrity) {
-    state.statusRevealed.systemIntegrity = true;
+  syncDerivedState();
+  if (!hadIntegrityAssessment && state.statusRevealed.systemIntegrity) {
     addLogEntry("System Integrity assessment available.");
   }
 
   if (renderOutput && REPORTS[key]) void renderReport(key, true);
   return true;
-}
-
-function updateMemoryIntegrity() {
-  state.status.memoryIntegrity = Math.round((state.memory / state.memoryMax) * 100);
 }
 
 bootButton.addEventListener("click", bootSequence);
