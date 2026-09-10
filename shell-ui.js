@@ -149,21 +149,24 @@ function updateTaskBar() {
 
 function renderNavigation() {
   const unlocked = Boolean(state.progression.navigationUnlocked);
-  navigationPanel.classList.toggle("hidden", !unlocked);
+  const visible = unlocked || debugToolsEnabled;
+  navigationPanel.classList.toggle("hidden", !visible);
   const currentView = state.ui.currentView || "MAIN";
-  const signature = `${unlocked}:${currentView}:${debugToolsEnabled}`;
+  const signature = `${visible}:${unlocked}:${currentView}:${debugToolsEnabled}`;
   if (signature === navigationRenderCache) return;
 
-  if (!unlocked) {
+  if (!visible) {
     navigationPanel.innerHTML = "";
     navigationRenderCache = signature;
     return;
   }
 
   const buttons = [
-    `<button type="button" data-view="MAIN" class="nav-button ${currentView === "MAIN" ? "active" : ""}">MAIN</button>`,
-    `<button type="button" data-view="TIMELINE" class="nav-button ${currentView === "TIMELINE" ? "active" : ""}">TIMELINE</button>`
+    `<button type="button" data-view="MAIN" class="nav-button ${currentView === "MAIN" ? "active" : ""}">MAIN</button>`
   ];
+  if (unlocked) {
+    buttons.push(`<button type="button" data-view="TIMELINE" class="nav-button ${currentView === "TIMELINE" ? "active" : ""}">TIMELINE</button>`);
+  }
   if (debugToolsEnabled) {
     buttons.push(`<button type="button" data-debug-panel-toggle class="nav-button debug-nav-button" aria-pressed="false">DEBUG</button>`);
   }
@@ -203,6 +206,11 @@ function applyCurrentView() {
 }
 
 function switchMainView(view) {
+  if (view === "MAIN" && debugToolsEnabled && !state.progression.navigationUnlocked) {
+    state.ui.currentView = "MAIN";
+    applyCurrentView();
+    return;
+  }
   if (!state.progression.navigationUnlocked || view === state.ui.currentView) return;
   state.ui.currentView = view;
   applyCurrentView();
