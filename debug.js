@@ -229,7 +229,7 @@ function updateDebugPanel() {
   if (!panel || panel.classList.contains("hidden")) return;
 
   const headerInfo = panel.querySelector(".debug-header span");
-  if (headerInfo) headerInfo.textContent = `ACC ${formatAccumulatedTime(state.accumulatedTimeSeconds)} · Ctrl+Shift+D`;
+  if (headerInfo) headerInfo.textContent = `ACC ${formatAccumulatedTime(state.accumulatedTimeSeconds)} · DRAG TO MOVE`;
 
   const taskList = document.getElementById("debugTaskList");
   taskList.innerHTML = state.runningTasks.length
@@ -243,23 +243,99 @@ function updateDebugPanel() {
     : `<div class="debug-empty">NO TASKS</div>`;
 }
 
+function updateDebugNavButton() {
+  const panel = document.getElementById("debugPanel");
+  const button = document.querySelector("[data-debug-panel-toggle]");
+  if (!panel || !button) return;
+  const visible = !panel.classList.contains("hidden");
+  button.classList.toggle("active", visible);
+  button.setAttribute("aria-pressed", String(visible));
+}
+
 function setDebugPanelVisible(visible) {
   const panel = document.getElementById("debugPanel");
   if (!panel) return;
   panel.classList.toggle("hidden", !visible);
   if (visible) updateDebugPanel();
+  updateDebugNavButton();
+}
+
+function clampDebugPanelToViewport(panel) {
+  if (panel.classList.contains("hidden")) return;
+  const rect = panel.getBoundingClientRect();
+  const margin = 8;
+  const maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
+  const maxTop = Math.max(margin, window.innerHeight - Math.min(rect.height, window.innerHeight - margin * 2) - margin);
+  const left = Math.min(Math.max(margin, rect.left), maxLeft);
+  const top = Math.min(Math.max(margin, rect.top), maxTop);
+
+  if (left !== rect.left || top !== rect.top) {
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+    panel.style.right = "auto";
+    panel.style.bottom = "auto";
+    panel.style.transform = "none";
+  }
+}
+
+function initDebugPanelDrag() {
+  const panel = document.getElementById("debugPanel");
+  const header = panel?.querySelector(".debug-header");
+  if (!panel || !header) return;
+
+  let dragging = false;
+  let pointerId = null;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  header.addEventListener("pointerdown", event => {
+    if (event.button !== 0) return;
+    const rect = panel.getBoundingClientRect();
+    dragging = true;
+    pointerId = event.pointerId;
+    offsetX = event.clientX - rect.left;
+    offsetY = event.clientY - rect.top;
+    panel.style.left = `${rect.left}px`;
+    panel.style.top = `${rect.top}px`;
+    panel.style.right = "auto";
+    panel.style.bottom = "auto";
+    panel.style.transform = "none";
+    panel.classList.add("dragging");
+    header.setPointerCapture(pointerId);
+    event.preventDefault();
+  });
+
+  header.addEventListener("pointermove", event => {
+    if (!dragging || event.pointerId !== pointerId) return;
+    const panelRect = panel.getBoundingClientRect();
+    const margin = 8;
+    const maxLeft = Math.max(margin, window.innerWidth - panelRect.width - margin);
+    const maxTop = Math.max(margin, window.innerHeight - Math.min(panelRect.height, window.innerHeight - margin * 2) - margin);
+    const left = Math.min(Math.max(margin, event.clientX - offsetX), maxLeft);
+    const top = Math.min(Math.max(margin, event.clientY - offsetY), maxTop);
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+  });
+
+  const finishDrag = event => {
+    if (!dragging || event.pointerId !== pointerId) return;
+    dragging = false;
+    panel.classList.remove("dragging");
+    if (header.hasPointerCapture(pointerId)) header.releasePointerCapture(pointerId);
+    pointerId = null;
+  };
+
+  header.addEventListener("pointerup", finishDrag);
+  header.addEventListener("pointercancel", finishDrag);
+  window.addEventListener("resize", () => clampDebugPanelToViewport(panel));
 }
 
 function initDebugTools() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get("debug") === "1") setDebugPanelVisible(true);
+  const enabled = params.get("debug") === "1";
+  if (enabled) setDebugPanelVisible(true);
 
-  document.addEventListener("keydown", event => {
-    if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "d") {
-      const panel = document.getElementById("debugPanel");
-      setDebugPanelVisible(panel.classList.contains("hidden"));
-    }
-  });
+  initDebugPanelDrag();
 
   document.getElementById("debugPanel")?.addEventListener("click", event => {
     const jump = event.target.closest("[data-debug-jump]");
