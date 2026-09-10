@@ -6,6 +6,7 @@ const controlPanel = document.getElementById("controlPanel");
 const controlContent = document.getElementById("controlContent");
 const secondaryResourcesPanel = document.getElementById("secondaryResourcesPanel");
 const secondaryResourcesContent = document.getElementById("secondaryResourcesContent");
+const debugToolsEnabled = new URLSearchParams(window.location.search).get("debug") === "1";
 
 let resourcesRenderCache = null;
 let taskbarStructureCache = null;
@@ -148,15 +149,29 @@ function updateTaskBar() {
 
 function renderNavigation() {
   const unlocked = Boolean(state.progression.navigationUnlocked);
-  navigationPanel.classList.toggle("hidden", !unlocked);
+  const visible = unlocked || debugToolsEnabled;
+  navigationPanel.classList.toggle("hidden", !visible);
   const currentView = state.ui.currentView || "MAIN";
-  const signature = `${unlocked}:${currentView}`;
+  const signature = `${visible}:${unlocked}:${currentView}:${debugToolsEnabled}`;
   if (signature === navigationRenderCache) return;
 
-  navigationPanel.innerHTML = unlocked
-    ? `<button type="button" data-view="MAIN" class="nav-button ${currentView === "MAIN" ? "active" : ""}">MAIN</button><button type="button" data-view="TIMELINE" class="nav-button ${currentView === "TIMELINE" ? "active" : ""}">TIMELINE</button>`
-    : "";
+  if (!visible) {
+    navigationPanel.innerHTML = "";
+    navigationRenderCache = signature;
+    return;
+  }
+
+  const buttons = [];
+  if (unlocked) {
+    buttons.push(`<button type="button" data-view="MAIN" class="nav-button ${currentView === "MAIN" ? "active" : ""}">MAIN</button>`);
+    buttons.push(`<button type="button" data-view="TIMELINE" class="nav-button ${currentView === "TIMELINE" ? "active" : ""}">TIMELINE</button>`);
+  }
+  if (debugToolsEnabled) {
+    buttons.push(`<button type="button" data-debug-panel-toggle class="nav-button debug-nav-button" aria-pressed="false">DEBUG</button>`);
+  }
+  navigationPanel.innerHTML = buttons.join("");
   navigationRenderCache = signature;
+  if (typeof updateDebugNavButton === "function") updateDebugNavButton();
 }
 
 function renderTimeline() {
@@ -264,6 +279,13 @@ runningTasksBar.addEventListener("pointerdown", event => {
 });
 
 navigationPanel.addEventListener("click", event => {
+  const debugToggle = event.target.closest("[data-debug-panel-toggle]");
+  if (debugToggle && typeof setDebugPanelVisible === "function") {
+    const panel = document.getElementById("debugPanel");
+    setDebugPanelVisible(panel?.classList.contains("hidden") ?? true);
+    return;
+  }
+
   const button = event.target.closest("[data-view]");
   if (button) switchMainView(button.dataset.view);
 });
