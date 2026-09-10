@@ -14,6 +14,11 @@ function taskByKey(key) {
   return state.runningTasks.find(task => task.key === key);
 }
 
+function getTaskDuration(key) {
+  const definition = TASK_DEFINITIONS[key];
+  return definition ? Math.max(1, Number(definition.duration || 1)) : null;
+}
+
 function getTotalGeneration() {
   const external = Math.max(0, Number(state.powerGeneration || 0));
   const backup = state.controls.backupGeneratorOn ? GAME_CONFIG.backupGeneration : 0;
@@ -42,12 +47,13 @@ function startTask(key) {
   if (!definition || taskByKey(key) || state.isShuttingDown) return false;
   if (!canReservePower(definition.power)) return false;
 
+  const duration = getTaskDuration(key);
   state.runningTasks.push({
     id: `${key}:${Date.now()}:${Math.random().toString(36).slice(2, 7)}`,
     key,
     label: definition.label,
-    durationSeconds: definition.duration,
-    remainingSeconds: definition.duration,
+    durationSeconds: duration,
+    remainingSeconds: duration,
     power: definition.power,
     status: "RUNNING",
     review: Boolean(definition.review)
