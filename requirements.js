@@ -177,7 +177,7 @@ function hideRequirements() {
   actionTooltip.classList.add("hidden");
 }
 
-document.querySelectorAll("[data-power-requirement]").forEach(button => {
+document.querySelectorAll("[data-power-requirement], #systemDiagnosticsButton").forEach(button => {
   button.addEventListener("mouseenter", () => showRequirements(button));
   button.addEventListener("mouseleave", hideRequirements);
   button.addEventListener("focus", () => showRequirements(button));
