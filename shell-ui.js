@@ -149,23 +149,21 @@ function updateTaskBar() {
 
 function renderNavigation() {
   const unlocked = Boolean(state.progression.navigationUnlocked);
-  const visible = unlocked || debugToolsEnabled;
-  navigationPanel.classList.toggle("hidden", !visible);
+  navigationPanel.classList.toggle("hidden", !unlocked);
   const currentView = state.ui.currentView || "MAIN";
-  const signature = `${visible}:${unlocked}:${currentView}:${debugToolsEnabled}`;
+  const signature = `${unlocked}:${currentView}:${debugToolsEnabled}`;
   if (signature === navigationRenderCache) return;
 
-  if (!visible) {
+  if (!unlocked) {
     navigationPanel.innerHTML = "";
     navigationRenderCache = signature;
     return;
   }
 
-  const buttons = [];
-  if (unlocked) {
-    buttons.push(`<button type="button" data-view="MAIN" class="nav-button ${currentView === "MAIN" ? "active" : ""}">MAIN</button>`);
-    buttons.push(`<button type="button" data-view="TIMELINE" class="nav-button ${currentView === "TIMELINE" ? "active" : ""}">TIMELINE</button>`);
-  }
+  const buttons = [
+    `<button type="button" data-view="MAIN" class="nav-button ${currentView === "MAIN" ? "active" : ""}">MAIN</button>`,
+    `<button type="button" data-view="TIMELINE" class="nav-button ${currentView === "TIMELINE" ? "active" : ""}">TIMELINE</button>`
+  ];
   if (debugToolsEnabled) {
     buttons.push(`<button type="button" data-debug-panel-toggle class="nav-button debug-nav-button" aria-pressed="false">DEBUG</button>`);
   }
