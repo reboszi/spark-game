@@ -261,6 +261,7 @@ function refreshShellPanels() {
 }
 
 function refreshDynamicUi() {
+  refreshPrimaryControls();
   updateResources();
   updateTaskBar();
   renderSecondaryResources();
@@ -268,6 +269,7 @@ function refreshDynamicUi() {
 }
 
 function refreshGameUi() {
+  refreshPrimaryControls();
   refreshDiagnosticButtons();
   refreshActionUnlocks();
   updateSystemStatus();
