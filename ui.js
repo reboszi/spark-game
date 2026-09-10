@@ -82,7 +82,7 @@ function calculateSystemIntegrity() {
   integrity -= Math.round((1 - Math.min(1, state.status.memoryIntegrity / 100)) * 15);
   integrity -= Math.round((1 - Math.min(1, state.status.storageRecovered / 100)) * 25);
   if (!state.actions.archive01Repaired) integrity -= 5;
-  integrity -= 20; // Other unresolved subsystem families.
+  integrity -= 20;
   return Math.max(0, integrity);
 }
 
@@ -148,6 +148,13 @@ function renderActivityLog() {
   activityLogEl.classList.toggle("hidden", state.logEntries.length === 0);
 }
 
+function refreshPrimaryControls() {
+  const diagnosticsComplete = Boolean(state.progression.systemDiagnosticsComplete);
+  const diagnosticsRunning = typeof taskByKey === "function" && Boolean(taskByKey("system:diagnostics"));
+  primaryControls.classList.toggle("hidden", diagnosticsComplete);
+  systemDiagnosticsButton.disabled = diagnosticsComplete || diagnosticsRunning;
+}
+
 function refreshDiagnosticButtons() {
   diagnosticControls.querySelectorAll("button[data-diag]").forEach(button => {
     button.classList.toggle("hidden", Boolean(state.diagnostics[button.dataset.diag]));
@@ -169,6 +176,6 @@ function requirementRow(label, required, met) {
 }
 
 function refreshInterfaceFromState() {
-  primaryControls.classList.toggle("hidden", state.progression.systemDiagnosticsComplete);
+  refreshPrimaryControls();
   refreshGameUi();
 }
