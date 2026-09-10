@@ -129,6 +129,8 @@ function showRequirements(button) {
     ? Number(button.dataset.processingRequirement)
     : null;
   const memoryReq = getMemoryRequirement(button);
+  const key = getButtonTaskKey(button);
+  const duration = key ? getTaskDuration(key) : null;
 
   hoveredRequirements.power = powerReq || null;
   hoveredRequirements.processing = processingReq;
@@ -147,12 +149,13 @@ function showRequirements(button) {
   }
   if (!hasTaskImplementation(button)) reqHtml += requirementRow("Operation", "NOT IMPLEMENTED", false);
 
-  const key = getButtonTaskKey(button);
   actionTooltip.innerHTML = `
     <div class="tooltip-title">${button.textContent.trim()}</div>
     <div class="tooltip-description">${actionDescriptions[key] || "System operation."}</div>
     <div class="tooltip-section-title">REQUIREMENTS</div>
     ${reqHtml || '<div class="tooltip-requirement met">None</div>'}
+    <div class="tooltip-section-title tooltip-outcome-title">DURATION</div>
+    <div class="tooltip-outcome">${duration === null ? "UNKNOWN" : formatCountdown(duration)}</div>
     <div class="tooltip-section-title tooltip-outcome-title">OUTCOME</div>
     <div class="tooltip-outcome">${actionOutcomes[key] || "UNKNOWN"}</div>`;
   actionTooltip.classList.remove("hidden");
@@ -161,7 +164,7 @@ function showRequirements(button) {
   const width = 300;
   let left = rect.right + 12;
   if (left + width > window.innerWidth - 12) left = Math.max(12, rect.left - width - 12);
-  let top = Math.min(rect.top, window.innerHeight - 260);
+  let top = Math.min(rect.top, window.innerHeight - 300);
   top = Math.max(12, top);
   actionTooltip.style.left = `${left}px`;
   actionTooltip.style.top = `${top}px`;
